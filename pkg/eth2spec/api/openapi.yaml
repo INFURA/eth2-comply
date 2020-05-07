@@ -1,0 +1,3486 @@
+openapi: 3.0.3
+info:
+  contact:
+    name: Ethereum Github
+    url: https://github.com/ethereum/eth2.0-apis/issues
+  description: API specification for the beacon node, which enables users to query
+    and participate in Ethereum 2.0 phase 0 beacon chain.
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  title: Eth2 Beacon Node API
+  version: Dev - Eth2Spec v0.11.1
+servers:
+- url: '{server_url}'
+  variables:
+    server_url:
+      default: http://public-mainnet-node.ethereum.org/api
+      description: Beacon node API url
+tags:
+- description: Set of endpoints to query beacon chain.
+  name: Beacon
+- description: Endpoints to query chain configuration, specification, and fork schedules.
+  name: Config
+- description: Endpoints to query node related informations
+  name: Node
+- description: Endpoints intended for validator clients
+  name: Validator
+- description: The minimal set of endpoints to enable a working validator implementation.
+  name: ValidatorRequiredApi
+paths:
+  /v1/beacon/genesis:
+    get:
+      description: Retrieve details of the chain's genesis which can be used to identify
+        chain.
+      operationId: getGenesis
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200'
+          description: Request successful
+        "404":
+          description: Chain genesis info is not yet known
+        "500":
+          description: Beacon node internal error.
+      summary: Retrieve details of the chain's genesis.
+      tags:
+      - Beacon
+      - ValidatorRequiredApi
+  /v1/beacon/states/{state_id}/root:
+    get:
+      description: Calculates HashTreeRoot for state with given 'stateId'. If stateId
+        is root, same value will be returned.
+      operationId: getStateRoot
+      parameters:
+      - description: |
+          State identifier.
+          Can be one of: "head" (canonical head in node's view), "genesis", "finalized", "justified", \<slot\>, \<hex encoded stateRoot with 0x prefix\>.
+        example: head
+        explode: false
+        in: path
+        name: state_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_1'
+          description: Success
+        "500":
+          description: Beacon node internal error.
+      summary: Get state SSZ HashTreeRoot
+      tags:
+      - Beacon
+  /v1/beacon/states/{state_id}/fork:
+    get:
+      description: Returns [Fork](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#fork)
+        object for state with given 'stateId'.
+      operationId: getStateFork
+      parameters:
+      - description: |
+          State identifier.
+          Can be one of: "head" (canonical head in node's view), "genesis", "finalized", "justified", \<slot\>, \<hex encoded stateRoot with 0x prefix\>.
+        example: head
+        explode: false
+        in: path
+        name: state_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_2'
+          description: Success
+        "500":
+          description: Beacon node internal error.
+      summary: Get Fork object for requested state
+      tags:
+      - Beacon
+      - ValidatorRequiredApi
+  /v1/beacon/states/{state_id}/finality_checkpoints:
+    get:
+      description: |
+        Returns finality checkpoints for state with given 'stateId'.
+        In case finality is not yet achieved, checkpoint should return epoch 0 and ZERO_HASH as root.
+      operationId: getStateFinalityCheckpoints
+      parameters:
+      - description: |
+          State identifier.
+          Can be one of: "head" (canonical head in node's view), "genesis", "finalized", "justified", \<slot\>, \<hex encoded stateRoot with 0x prefix\>.
+        example: head
+        explode: false
+        in: path
+        name: state_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_3'
+          description: Success
+        "500":
+          description: Beacon node internal error.
+      summary: Get state finality checkpoints
+      tags:
+      - Beacon
+  /v1/beacon/states/{state_id}/validators:
+    get:
+      description: Returns filterable list of validators with their balance, status
+        and index.
+      operationId: getStateValidators
+      parameters:
+      - description: |
+          State identifier.
+          Can be one of: "head" (canonical head in node's view), "genesis", "finalized", "justified", \<slot\>, \<hex encoded stateRoot with 0x prefix\>.
+        example: head
+        explode: false
+        in: path
+        name: state_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Either hex encoded public key (with 0x prefix) or validator index
+        explode: true
+        in: query
+        name: id
+        required: false
+        schema:
+          items:
+            description: Either hex encoded public key (with 0x prefix) or validator
+              index
+            type: string
+          maxItems: 30
+          type: array
+          uniqueItems: true
+        style: form
+      - description: '[Validator status specification](https://hackmd.io/ofFJ5gOmQpu1jjHilHbdQQ)'
+        explode: true
+        in: query
+        name: status
+        required: false
+        schema:
+          items:
+            allOf:
+            - description: |
+                Possible statuses:
+                - **pending_initialized** - When the first deposit is processed, but not enough funds are available (or not yet the end of the first epoch) to get validator into the activation queue.
+                - **pending_queued** - When validator is waiting to get activated, and have enough funds etc. while in the queue, validator activation epoch keeps changing until it gets to the front and make it through (finalization is a requirement here too).
+                - **active_ongoing** - When validator must be attesting, and have not initiated any exit.
+                - **active_exiting** - When validator is still active, but filed a voluntary request to exit.
+                - **active_slashed** - When validator is still active, but have a slashed status and is scheduled to exit.
+                - **exited_unslashed** - When validator has reached reguler exit epoch, not being slashed, and doesn't have to attest any more, but cannot withdraw yet.
+                - **exited_slashed** - When validator has reached reguler exit epoch, but was slashed, have to wait for a longer withdrawal period.
+                - **withdrawal_possible** - After validator has exited, a while later is permitted to move funds, and is truly out of the system.
+                - **withdrawal_done** - (not possible in phase0, except slashing full balance) - actually having moved funds away
+
+                [Validator status specification](https://hackmd.io/ofFJ5gOmQpu1jjHilHbdQQ)
+              enum:
+              - pending_initialized
+              - pending_queued
+              - active_ongoing
+              - active_exiting
+              - active_slashed
+              - exited_unslashed
+              - exited_slashed
+              - withdrawal_possible
+              - withdrawal_done
+              example: active_ongoing
+              type: string
+            - enum:
+              - active
+              - pending
+              - exited
+              - withdrawal
+              type: string
+          type: array
+          uniqueItems: true
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_4'
+          description: Success
+        "500":
+          description: Beacon node internal error.
+      summary: Get validators from state
+      tags:
+      - Beacon
+  /v1/beacon/states/{state_id}/validators/{validator_id}:
+    get:
+      description: Returns validator specified by state and id or public key along
+        with status and balance.
+      operationId: getStateValidator
+      parameters:
+      - description: |
+          State identifier.
+          Can be one of: "head" (canonical head in node's view), "genesis", "finalized", "justified", \<slot\>, \<hex encoded stateRoot with 0x prefix\>.
+        example: head
+        explode: false
+        in: path
+        name: state_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Either hex encoded public key (with 0x prefix) or validator index
+        explode: false
+        in: path
+        name: validator_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_5'
+          description: Success
+        "404":
+          description: Validator doesn't exist.
+        "500":
+          description: Beacon node internal error.
+      summary: Get validator from state by id
+      tags:
+      - Beacon
+      - ValidatorRequiredApi
+  /v1/beacon/states/{state_id}/committees/{epoch}:
+    get:
+      description: Retrieves the committees for the given state at the given epoch.
+      operationId: getEpochCommittees
+      parameters:
+      - description: |
+          State identifier.
+          Can be one of: "head" (canonical head in node's view), "genesis", "finalized", "justified", \<slot\>, \<hex encoded stateRoot with 0x prefix\>.
+        example: head
+        explode: false
+        in: path
+        name: state_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      - description: Epoch for which to calculate committees. Defaults to beacon state
+          epoch.
+        explode: false
+        in: path
+        name: epoch
+        required: true
+        schema:
+          allOf:
+          - example: "1"
+            type: string
+          - {}
+        style: simple
+      - description: Committee index
+        explode: true
+        in: query
+        name: index
+        required: false
+        schema:
+          allOf:
+          - example: "1"
+            type: string
+          - {}
+        style: form
+      - explode: true
+        in: query
+        name: slot
+        required: false
+        schema:
+          allOf:
+          - example: "1"
+            type: string
+          - {}
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_6'
+          description: Success
+        "400":
+          description: If slot doesn't belong in given epoch.
+        "500":
+          description: Beacon node internal error.
+      summary: Get all committees for epoch
+      tags:
+      - Beacon
+  /v1/beacon/headers:
+    get:
+      description: Retrieves block headers matching given query. By default it will
+        fetch current head slot blocks.
+      operationId: getBlockHeaders
+      parameters:
+      - explode: true
+        in: query
+        name: slot
+        required: false
+        schema:
+          allOf:
+          - example: "1"
+            type: string
+          - {}
+        style: form
+      - explode: true
+        in: query
+        name: parent_root
+        required: false
+        schema:
+          allOf:
+          - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            format: hex
+            pattern: ^0x[a-fA-F0-9]{64}$
+            type: string
+          - {}
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_7'
+          description: Success
+        "500":
+          description: Beacon node internal error.
+      summary: Get block headers
+      tags:
+      - Beacon
+  /v1/beacon/headers/{block_id}:
+    get:
+      description: Retrieves block header for given block id.
+      operationId: getBlockHeader
+      parameters:
+      - description: |
+          Block identifier.
+          Can be one of: "head" (canonical head in node's view), "genesis", "finalized", \<slot\>, \<hex encoded blockRoot with 0x prefix\>.
+        example: head
+        explode: false
+        in: path
+        name: block_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_8'
+          description: Success
+        "404":
+          description: Block not found!
+        "500":
+          description: Beacon node internal error.
+      summary: Get block header
+      tags:
+      - Beacon
+  /v1/beacon/blocks/{block_id}:
+    get:
+      description: Retrieves block details for given block id.
+      operationId: getBlock
+      parameters:
+      - description: |
+          Block identifier.
+          Can be one of: "head" (canonical head in node's view), "genesis", "finalized", \<slot\>, \<hex encoded blockRoot with 0x prefix\>.
+        example: head
+        explode: false
+        in: path
+        name: block_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_9'
+          description: Success
+        "404":
+          description: Block not found!
+        "500":
+          description: Beacon node internal error.
+      summary: Get block
+      tags:
+      - Beacon
+  /v1/beacon/blocks/{block_id}/root:
+    get:
+      description: Retrieves hashTreeRoot of BeaconBlock/BeaconBlockHeader
+      operationId: getBlockRoot
+      parameters:
+      - description: |
+          Block identifier.
+          Can be one of: "head" (canonical head in node's view), "genesis", "finalized", \<slot\>, \<hex encoded blockRoot with 0x prefix\>.
+        example: head
+        explode: false
+        in: path
+        name: block_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_10'
+          description: Success
+        "404":
+          description: Block not found!
+        "500":
+          description: Beacon node internal error.
+      summary: Get block root
+      tags:
+      - Beacon
+  /v1/beacon/blocks/{block_id}/attestations:
+    get:
+      description: Retrieves attestation included in requested block.
+      operationId: getBlockAttestations
+      parameters:
+      - description: |
+          Block identifier.
+          Can be one of: "head" (canonical head in node's view), "genesis", "finalized", \<slot\>, \<hex encoded blockRoot with 0x prefix\>.
+        example: head
+        explode: false
+        in: path
+        name: block_id
+        required: true
+        schema:
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_11'
+          description: Success
+        "500":
+          description: Beacon node internal error.
+      summary: Get block attestations
+      tags:
+      - Beacon
+  /v1/beacon/pool/attestations:
+    get:
+      description: Retrieves attestations known by the node but not necessarily incorporated
+        into any block
+      operationId: getPoolAttestations
+      parameters:
+      - explode: true
+        in: query
+        name: slot
+        required: false
+        schema:
+          example: "1"
+          type: string
+        style: form
+      - explode: true
+        in: query
+        name: committee_index
+        required: false
+        schema:
+          example: "1"
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_11'
+          description: Successful response
+        "500":
+          description: Beacon node internal error.
+      summary: Get Attestations from operations pool
+      tags:
+      - Beacon
+    post:
+      description: Submits Attestation object to node. If attestation passes all validation
+        constraints, node MUST publish attestation on appropriate subnet.
+      operationId: submitPoolAttestations
+      requestBody:
+        $ref: '#/components/requestBodies/inline_object'
+        content:
+          application/json:
+            schema:
+              description: The [`Attestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestation)
+                object from the Eth2.0 spec.
+              properties:
+                aggregation_bits:
+                  description: Attester aggregation bits.
+                  format: byte
+                  pattern: ^0x[a-fA-F0-9]+$
+                  type: string
+                signature:
+                  allOf:
+                  - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                    format: bytes
+                    pattern: ^0x[a-fA-F0-9]{192}$
+                    type: string
+                  - description: BLS aggregate signature.
+                data:
+                  $ref: '#/components/schemas/inline_response_200_11_data'
+              type: object
+        required: true
+      responses:
+        "200":
+          description: Attestation is stored in pool and broadcast on appropriate
+            subnet
+        "400":
+          description: Invalid attestation, it will never pass validation so it's
+            rejected
+        "500":
+          description: Beacon node internal error.
+      summary: Submit Attestation object to node
+      tags:
+      - Beacon
+      - ValidatorRequiredApi
+  /v1/beacon/pool/atttester_slashings:
+    get:
+      description: Retrieves attester slashings known by the node but not necessarily
+        incorporated into any block
+      operationId: getPoolAttesterSlashings
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_12'
+          description: Successful response
+        "500":
+          description: Beacon node internal error.
+      summary: Get AttesterSlashings from operations pool
+      tags:
+      - Beacon
+    post:
+      description: Submits AttesterSlashing object to node's pool and if passes validation
+        node MUST broadcast it to network.
+      operationId: submitPoolAttesterSlashings
+      requestBody:
+        $ref: '#/components/requestBodies/inline_object_1'
+        content:
+          application/json:
+            schema:
+              description: The [`AttesterSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/core/0_beacon-chain.md#attesterslashing)
+                object from the Eth2.0 spec.
+              properties:
+                attestation_1:
+                  $ref: '#/components/schemas/inline_response_200_12_attestation_1'
+                attestation_2:
+                  $ref: '#/components/schemas/inline_response_200_12_attestation_1'
+              type: object
+        required: true
+      responses:
+        "200":
+          description: Success
+        "400":
+          description: Invalid attester slashing. [See attester_slashing topic validation](https://github.com/ethereum/eth2.0-specs/blob/v0.11.3/specs/phase0/p2p-interface.md#global-topics)
+        "500":
+          description: Beacon node internal error.
+      summary: Submit AttesterSlashing object to node's pool
+      tags:
+      - Beacon
+  /v1/beacon/pool/proposer_slashings:
+    get:
+      description: Retrieves proposer slashings known by the node but not necessarily
+        incorporated into any block
+      operationId: getPoolProposerSlashings
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_13'
+          description: Successful response
+        "500":
+          description: Beacon node internal error.
+      summary: Get ProposerSlashings from operations pool
+      tags:
+      - Beacon
+    post:
+      description: Submits ProposerSlashing object to node's pool and if passes validation  node
+        MUST broadcast it to network.
+      operationId: submitPoolProposerSlashings
+      requestBody:
+        $ref: '#/components/requestBodies/inline_object_2'
+        content:
+          application/json:
+            schema:
+              description: The [`ProposerSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#proposerslashing)
+                object from the Eth2.0 spec.
+              properties:
+                signed_header_1:
+                  $ref: '#/components/schemas/inline_response_200_7_header'
+                signed_header_2:
+                  $ref: '#/components/schemas/inline_response_200_7_header'
+              type: object
+        required: true
+      responses:
+        "200":
+          description: Success
+        "400":
+          description: Invalid proposer slashing. [See proposer_slashing topic validation](https://github.com/ethereum/eth2.0-specs/blob/v0.11.3/specs/phase0/p2p-interface.md#global-topics)
+        "500":
+          description: Beacon node internal error.
+      summary: Submit ProposerSlashing object to node's pool
+      tags:
+      - Beacon
+  /v1/beacon/pool/voluntary_exits:
+    get:
+      description: Retrieves voluntary exits known by the node but not necessarily
+        incorporated into any block
+      operationId: getPoolVoluntaryExits
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_14'
+          description: Successful response
+        "500":
+          description: Beacon node internal error.
+      summary: Get SignedVoluntaryExit from operations pool
+      tags:
+      - Beacon
+    post:
+      description: Submits SignedVoluntaryExit object to node's pool and if passes
+        validation node MUST broadcast it to network.
+      operationId: submitPoolVoluntaryExit
+      requestBody:
+        $ref: '#/components/requestBodies/inline_object_3'
+        content:
+          application/json:
+            schema:
+              description: The [`SignedVoluntaryExit`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#signedvoluntaryexit)
+                object from the Eth2.0 spec.
+              properties:
+                message:
+                  $ref: '#/components/schemas/inline_response_200_14_message'
+                signature:
+                  example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                  format: bytes
+                  pattern: ^0x[a-fA-F0-9]{192}$
+                  type: string
+              type: object
+        required: true
+      responses:
+        "200":
+          description: Voluntary exit is stored in node and broadcasted to network
+        "400":
+          description: Invalid voluntary exit.
+        "500":
+          description: Beacon node internal error.
+      summary: Submit SignedVoluntaryExit object to node's pool
+      tags:
+      - Beacon
+  /v1/node/identity:
+    get:
+      description: Retrieves data about the node's network presence
+      operationId: getNetworkIdentity
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_15'
+          description: Request successful
+        "500":
+          description: Beacon node internal error.
+      summary: Get node network identity
+      tags:
+      - Node
+  /v1/node/peers:
+    get:
+      description: Retrieves data about the node's network peers
+      operationId: getPeers
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_16'
+          description: Request successful
+        "500":
+          description: Beacon node internal error.
+      summary: Get node network peers
+      tags:
+      - Node
+  /v1/node/peers/{peer_id}:
+    get:
+      description: Retrieves data about the given peer
+      operationId: getPeer
+      parameters:
+      - explode: false
+        in: path
+        name: peer_id
+        required: true
+        schema:
+          description: Cryptographic hash of a peer’s public key. [Read more](https://docs.libp2p.io/concepts/peer-id/)
+          example: QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+          type: string
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_17'
+          description: Request successful
+        "500":
+          description: Beacon node internal error.
+      summary: Get peer
+      tags:
+      - Node
+  /v1/node/version:
+    get:
+      description: Requests that the beacon node identify information about its implementation
+        in a format similar to a  [HTTP User-Agent](https://tools.ietf.org/html/rfc7231#section-5.5.3)
+        field.
+      operationId: getNodeVersion
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_18'
+          description: Request successful
+        "500":
+          description: Beacon node internal error.
+      summary: Get version string of the running beacon node.
+      tags:
+      - Node
+  /v1/node/syncing:
+    get:
+      description: Requests the beacon node to describe if it's currently syncing
+        or not, and if it is, what block it is up to.
+      operationId: getSyncingStatus
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_19'
+          description: Request successful
+        "500":
+          description: Beacon node internal error.
+      summary: Get node syncing status
+      tags:
+      - Node
+      - ValidatorRequiredApi
+  /v1/node/health:
+    get:
+      description: Returns node health status in http status codes. Useful for load
+        balancers.
+      operationId: getHealth
+      responses:
+        "200":
+          description: Node is ready
+        "206":
+          description: Node is syncing but can serve incomplete data
+        "503":
+          description: Node not initialized or having issues
+      summary: Get health check
+      tags:
+      - Node
+  /v1/config/fork_schedule:
+    get:
+      description: Retrieve all scheduled upcoming forks this node is aware of.
+      operationId: getForkSchedule
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_20'
+          description: Success
+        "500":
+          description: Beacon node internal error.
+      summary: Get scheduled upcoming forks.
+      tags:
+      - Config
+  /v1/config/spec:
+    get:
+      description: |
+        Retrieve specification configuration (without Phase 1 params) used on this node.
+        [Specification params list](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/configs/mainnet.yaml)
+
+        Values are returned with following format:
+          - any value starting with 0x in the spec is returned as a hex string
+          - all other values are returned as number
+      operationId: getSpec
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_21'
+          description: Success
+        "500":
+          description: Beacon node internal error.
+      summary: Get spec params.
+      tags:
+      - Config
+  /v1/config/deposit_contract:
+    get:
+      description: Retrieve deposit contract address and genesis fork version.
+      operationId: getDepositContract
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/inline_response_200_22'
+          description: Success
+        "500":
+          description: Beacon node internal error.
+      summary: Get deposit contract address.
+      tags:
+      - Config
+components:
+  parameters:
+    StateId:
+      description: |
+        State identifier.
+        Can be one of: "head" (canonical head in node's view), "genesis", "finalized", "justified", \<slot\>, \<hex encoded stateRoot with 0x prefix\>.
+      example: head
+      explode: false
+      in: path
+      name: state_id
+      required: true
+      schema:
+        type: string
+      style: simple
+    BlockId:
+      description: |
+        Block identifier.
+        Can be one of: "head" (canonical head in node's view), "genesis", "finalized", \<slot\>, \<hex encoded blockRoot with 0x prefix\>.
+      example: head
+      explode: false
+      in: path
+      name: block_id
+      required: true
+      schema:
+        type: string
+      style: simple
+  requestBodies:
+    inline_object_1:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/inline_object_1'
+      required: true
+    inline_object:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/inline_object'
+      required: true
+    inline_object_3:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/inline_object_3'
+      required: true
+    inline_object_2:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/inline_object_2'
+      required: true
+  responses:
+    InvalidRequest:
+      description: Invalid request syntax.
+    InternalError:
+      description: Beacon node internal error.
+    NotFound:
+      description: Not found
+    CurrentlySyncing:
+      description: Beacon node is currently syncing, try again later.
+  schemas:
+    BeaconBlock:
+      allOf:
+      - $ref: '#/components/schemas/BeaconBlock_allOf'
+      - $ref: '#/components/schemas/BeaconBlock_allOf_1'
+      description: The [`BeaconBlock`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#beaconblock)
+        object from the Eth2.0 spec.
+    SignedBeaconBlock:
+      description: The [`SignedBeaconBlock`](https://github.com/ethereum/eth2.0-specs/blob/v0.10.1/specs/phase0/beacon-chain.md#signedbeaconblock)
+        object envelope from the Eth2.0 spec.
+      properties:
+        message:
+          allOf:
+          - properties:
+              slot:
+                allOf:
+                - example: "1"
+                  type: string
+                - description: The slot to which this block corresponds.
+              proposer_index:
+                allOf:
+                - example: "1"
+                  type: string
+                - description: Index of validator in validator registry.
+              parent_root:
+                allOf:
+                - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                  format: hex
+                  pattern: ^0x[a-fA-F0-9]{64}$
+                  type: string
+                - description: The signing merkle root of the parent `BeaconBlock`.
+              state_root:
+                allOf:
+                - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                  format: hex
+                  pattern: ^0x[a-fA-F0-9]{64}$
+                  type: string
+                - description: The tree hash merkle root of the `BeaconState` for
+                    the `BeaconBlock`.
+            type: object
+          - properties:
+              body:
+                description: The [`BeaconBlockBody`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#beaconblockbody)
+                  object from the Eth2.0 spec.
+                properties:
+                  randao_reveal:
+                    allOf:
+                    - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                      format: bytes
+                      pattern: ^0x[a-fA-F0-9]{192}$
+                      type: string
+                    - description: The RanDAO reveal value provided by the validator.
+                  eth1_data:
+                    description: The [`Eth1Data`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#eth1data)
+                      object from the Eth2.0 spec.
+                    properties:
+                      deposit_root:
+                        allOf:
+                        - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                          format: hex
+                          pattern: ^0x[a-fA-F0-9]{64}$
+                          type: string
+                        - description: Root of the deposit tree.
+                      deposit_count:
+                        allOf:
+                        - example: "1"
+                          type: string
+                        - description: Total number of deposits.
+                      block_hash:
+                        allOf:
+                        - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                          format: hex
+                          pattern: ^0x[a-fA-F0-9]{64}$
+                          type: string
+                        - description: Ethereum 1.x block hash.
+                    type: object
+                  graffiti:
+                    format: byte
+                    pattern: ^0x[a-fA-F0-9]{64}$
+                    type: string
+                  proposer_slashings:
+                    items:
+                      description: The [`ProposerSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#proposerslashing)
+                        object from the Eth2.0 spec.
+                      properties:
+                        signed_header_1:
+                          description: The [`SignedBeaconBlockHeader`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#signedbeaconblockheader)
+                            object envelope from the Eth2.0 spec.
+                          properties:
+                            message:
+                              allOf:
+                              - properties:
+                                  slot:
+                                    allOf:
+                                    - example: "1"
+                                      type: string
+                                    - description: The slot to which this block corresponds.
+                                  proposer_index:
+                                    allOf:
+                                    - example: "1"
+                                      type: string
+                                    - description: Index of validator in validator
+                                        registry.
+                                  parent_root:
+                                    allOf:
+                                    - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                    - description: The signing merkle root of the
+                                        parent `BeaconBlock`.
+                                  state_root:
+                                    allOf:
+                                    - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                    - description: The tree hash merkle root of the
+                                        `BeaconState` for the `BeaconBlock`.
+                                type: object
+                              - properties:
+                                  body_root:
+                                    allOf:
+                                    - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                    - description: The tree hash merkle root of the
+                                        `BeaconBlockBody` for the `BeaconBlock`
+                                type: object
+                              description: The [`BeaconBlockHeader`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#beaconblockheader)
+                                object from the Eth2.0 spec.
+                            signature:
+                              example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                              format: bytes
+                              pattern: ^0x[a-fA-F0-9]{192}$
+                              type: string
+                          type: object
+                        signed_header_2:
+                          description: The [`SignedBeaconBlockHeader`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#signedbeaconblockheader)
+                            object envelope from the Eth2.0 spec.
+                          properties:
+                            message:
+                              allOf:
+                              - properties:
+                                  slot:
+                                    allOf:
+                                    - example: "1"
+                                      type: string
+                                    - description: The slot to which this block corresponds.
+                                  proposer_index:
+                                    allOf:
+                                    - example: "1"
+                                      type: string
+                                    - description: Index of validator in validator
+                                        registry.
+                                  parent_root:
+                                    allOf:
+                                    - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                    - description: The signing merkle root of the
+                                        parent `BeaconBlock`.
+                                  state_root:
+                                    allOf:
+                                    - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                    - description: The tree hash merkle root of the
+                                        `BeaconState` for the `BeaconBlock`.
+                                type: object
+                              - properties:
+                                  body_root:
+                                    allOf:
+                                    - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                    - description: The tree hash merkle root of the
+                                        `BeaconBlockBody` for the `BeaconBlock`
+                                type: object
+                              description: The [`BeaconBlockHeader`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#beaconblockheader)
+                                object from the Eth2.0 spec.
+                            signature:
+                              example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                              format: bytes
+                              pattern: ^0x[a-fA-F0-9]{192}$
+                              type: string
+                          type: object
+                      type: object
+                    type: array
+                  attester_slashings:
+                    items:
+                      description: The [`AttesterSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/core/0_beacon-chain.md#attesterslashing)
+                        object from the Eth2.0 spec.
+                      properties:
+                        attestation_1:
+                          description: The [`IndexedAttestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#indexedattestation)
+                            object from the Eth2.0 spec.
+                          properties:
+                            attesting_indices:
+                              description: Attesting validator indices
+                              items:
+                                example: "1"
+                                type: string
+                              maxItems: 2048
+                              type: array
+                            signature:
+                              allOf:
+                              - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                                format: bytes
+                                pattern: ^0x[a-fA-F0-9]{192}$
+                                type: string
+                              - description: The BLS signature of the `IndexedAttestation`,
+                                  created by the validator of the attestation.
+                            data:
+                              description: The [`AttestationData`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestationdata)
+                                object from the Eth2.0 spec.
+                              properties:
+                                slot:
+                                  example: "1"
+                                  type: string
+                                index:
+                                  example: "1"
+                                  type: string
+                                beacon_block_root:
+                                  allOf:
+                                  - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                    format: hex
+                                    pattern: ^0x[a-fA-F0-9]{64}$
+                                    type: string
+                                  - description: LMD GHOST vote.
+                                source:
+                                  description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                                  properties:
+                                    epoch:
+                                      example: "1"
+                                      type: string
+                                    root:
+                                      example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                  type: object
+                                target:
+                                  description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                                  properties:
+                                    epoch:
+                                      example: "1"
+                                      type: string
+                                    root:
+                                      example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                  type: object
+                              type: object
+                          type: object
+                        attestation_2:
+                          description: The [`IndexedAttestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#indexedattestation)
+                            object from the Eth2.0 spec.
+                          properties:
+                            attesting_indices:
+                              description: Attesting validator indices
+                              items:
+                                example: "1"
+                                type: string
+                              maxItems: 2048
+                              type: array
+                            signature:
+                              allOf:
+                              - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                                format: bytes
+                                pattern: ^0x[a-fA-F0-9]{192}$
+                                type: string
+                              - description: The BLS signature of the `IndexedAttestation`,
+                                  created by the validator of the attestation.
+                            data:
+                              description: The [`AttestationData`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestationdata)
+                                object from the Eth2.0 spec.
+                              properties:
+                                slot:
+                                  example: "1"
+                                  type: string
+                                index:
+                                  example: "1"
+                                  type: string
+                                beacon_block_root:
+                                  allOf:
+                                  - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                    format: hex
+                                    pattern: ^0x[a-fA-F0-9]{64}$
+                                    type: string
+                                  - description: LMD GHOST vote.
+                                source:
+                                  description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                                  properties:
+                                    epoch:
+                                      example: "1"
+                                      type: string
+                                    root:
+                                      example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                  type: object
+                                target:
+                                  description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                                  properties:
+                                    epoch:
+                                      example: "1"
+                                      type: string
+                                    root:
+                                      example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                  type: object
+                              type: object
+                          type: object
+                      type: object
+                    type: array
+                  attestations:
+                    items:
+                      description: The [`Attestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestation)
+                        object from the Eth2.0 spec.
+                      properties:
+                        aggregation_bits:
+                          description: Attester aggregation bits.
+                          format: byte
+                          pattern: ^0x[a-fA-F0-9]+$
+                          type: string
+                        signature:
+                          allOf:
+                          - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                            format: bytes
+                            pattern: ^0x[a-fA-F0-9]{192}$
+                            type: string
+                          - description: BLS aggregate signature.
+                        data:
+                          description: The [`AttestationData`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestationdata)
+                            object from the Eth2.0 spec.
+                          properties:
+                            slot:
+                              example: "1"
+                              type: string
+                            index:
+                              example: "1"
+                              type: string
+                            beacon_block_root:
+                              allOf:
+                              - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                format: hex
+                                pattern: ^0x[a-fA-F0-9]{64}$
+                                type: string
+                              - description: LMD GHOST vote.
+                            source:
+                              description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                              properties:
+                                epoch:
+                                  example: "1"
+                                  type: string
+                                root:
+                                  example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                  format: hex
+                                  pattern: ^0x[a-fA-F0-9]{64}$
+                                  type: string
+                              type: object
+                            target:
+                              description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                              properties:
+                                epoch:
+                                  example: "1"
+                                  type: string
+                                root:
+                                  example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                  format: hex
+                                  pattern: ^0x[a-fA-F0-9]{64}$
+                                  type: string
+                              type: object
+                          type: object
+                      type: object
+                    type: array
+                  deposits:
+                    items:
+                      description: The [`Deposit`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#deposit)
+                        object from the Eth2.0 spec.
+                      properties:
+                        proof:
+                          description: Branch in the deposit tree.
+                          items:
+                            allOf:
+                            - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                              format: hex
+                              pattern: ^0x[a-fA-F0-9]{64}$
+                              type: string
+                          maxItems: 32
+                          minItems: 32
+                          type: array
+                        data:
+                          description: The [`DepositData`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#depositdata)
+                            object from the Eth2.0 spec.
+                          properties:
+                            pubkey:
+                              description: The validator's BLS public key, uniquely
+                                identifying them. _48-bytes, hex encoded with 0x prefix,
+                                case insensitive._
+                              example: 0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a
+                              pattern: ^0x[a-fA-F0-9]{96}$
+                              type: string
+                            withdrawal_credentials:
+                              allOf:
+                              - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                format: hex
+                                pattern: ^0x[a-fA-F0-9]{64}$
+                                type: string
+                              - description: The withdrawal credentials.
+                            amount:
+                              allOf:
+                              - example: "1"
+                                type: string
+                              - description: Amount in Gwei.
+                            signature:
+                              allOf:
+                              - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                                format: bytes
+                                pattern: ^0x[a-fA-F0-9]{192}$
+                                type: string
+                              - description: Container self-signature.
+                          type: object
+                      type: object
+                    type: array
+                  voluntary_exits:
+                    items:
+                      description: The [`VoluntaryExit`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#voluntaryexit)
+                        object from the Eth2.0 spec.
+                      properties:
+                        epoch:
+                          allOf:
+                          - example: "1"
+                            type: string
+                          - description: Minimum epoch for processing exit.
+                        validator_index:
+                          allOf:
+                          - example: "1"
+                            type: string
+                          - description: Index of the exiting validator.
+                      type: object
+                    type: array
+                type: object
+            type: object
+          description: The [`BeaconBlock`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#beaconblock)
+            object from the Eth2.0 spec.
+        signature:
+          example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          format: bytes
+          pattern: ^0x[a-fA-F0-9]{192}$
+          type: string
+      type: object
+    SignedBeaconBlockHeader:
+      description: The [`SignedBeaconBlockHeader`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#signedbeaconblockheader)
+        object envelope from the Eth2.0 spec.
+      properties:
+        message:
+          allOf:
+          - properties:
+              slot:
+                allOf:
+                - example: "1"
+                  type: string
+                - description: The slot to which this block corresponds.
+              proposer_index:
+                allOf:
+                - example: "1"
+                  type: string
+                - description: Index of validator in validator registry.
+              parent_root:
+                allOf:
+                - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                  format: hex
+                  pattern: ^0x[a-fA-F0-9]{64}$
+                  type: string
+                - description: The signing merkle root of the parent `BeaconBlock`.
+              state_root:
+                allOf:
+                - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                  format: hex
+                  pattern: ^0x[a-fA-F0-9]{64}$
+                  type: string
+                - description: The tree hash merkle root of the `BeaconState` for
+                    the `BeaconBlock`.
+            type: object
+          - properties:
+              body_root:
+                allOf:
+                - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                  format: hex
+                  pattern: ^0x[a-fA-F0-9]{64}$
+                  type: string
+                - description: The tree hash merkle root of the `BeaconBlockBody`
+                    for the `BeaconBlock`
+            type: object
+          description: The [`BeaconBlockHeader`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#beaconblockheader)
+            object from the Eth2.0 spec.
+        signature:
+          example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          format: bytes
+          pattern: ^0x[a-fA-F0-9]{192}$
+          type: string
+      type: object
+    ValidatorResponse:
+      properties:
+        index:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Index of validator in validator registry.
+        balance:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Current validator balance in gwei.
+        status:
+          description: |
+            Possible statuses:
+            - **pending_initialized** - When the first deposit is processed, but not enough funds are available (or not yet the end of the first epoch) to get validator into the activation queue.
+            - **pending_queued** - When validator is waiting to get activated, and have enough funds etc. while in the queue, validator activation epoch keeps changing until it gets to the front and make it through (finalization is a requirement here too).
+            - **active_ongoing** - When validator must be attesting, and have not initiated any exit.
+            - **active_exiting** - When validator is still active, but filed a voluntary request to exit.
+            - **active_slashed** - When validator is still active, but have a slashed status and is scheduled to exit.
+            - **exited_unslashed** - When validator has reached reguler exit epoch, not being slashed, and doesn't have to attest any more, but cannot withdraw yet.
+            - **exited_slashed** - When validator has reached reguler exit epoch, but was slashed, have to wait for a longer withdrawal period.
+            - **withdrawal_possible** - After validator has exited, a while later is permitted to move funds, and is truly out of the system.
+            - **withdrawal_done** - (not possible in phase0, except slashing full balance) - actually having moved funds away
+
+            [Validator status specification](https://hackmd.io/ofFJ5gOmQpu1jjHilHbdQQ)
+          enum:
+          - pending_initialized
+          - pending_queued
+          - active_ongoing
+          - active_exiting
+          - active_slashed
+          - exited_unslashed
+          - exited_slashed
+          - withdrawal_possible
+          - withdrawal_done
+          example: active_ongoing
+          type: string
+        validator:
+          $ref: '#/components/schemas/inline_response_200_4_validator'
+      type: object
+    ValidatorStatus:
+      description: |
+        Possible statuses:
+        - **pending_initialized** - When the first deposit is processed, but not enough funds are available (or not yet the end of the first epoch) to get validator into the activation queue.
+        - **pending_queued** - When validator is waiting to get activated, and have enough funds etc. while in the queue, validator activation epoch keeps changing until it gets to the front and make it through (finalization is a requirement here too).
+        - **active_ongoing** - When validator must be attesting, and have not initiated any exit.
+        - **active_exiting** - When validator is still active, but filed a voluntary request to exit.
+        - **active_slashed** - When validator is still active, but have a slashed status and is scheduled to exit.
+        - **exited_unslashed** - When validator has reached reguler exit epoch, not being slashed, and doesn't have to attest any more, but cannot withdraw yet.
+        - **exited_slashed** - When validator has reached reguler exit epoch, but was slashed, have to wait for a longer withdrawal period.
+        - **withdrawal_possible** - After validator has exited, a while later is permitted to move funds, and is truly out of the system.
+        - **withdrawal_done** - (not possible in phase0, except slashing full balance) - actually having moved funds away
+
+        [Validator status specification](https://hackmd.io/ofFJ5gOmQpu1jjHilHbdQQ)
+      enum:
+      - pending_initialized
+      - pending_queued
+      - active_ongoing
+      - active_exiting
+      - active_slashed
+      - exited_unslashed
+      - exited_slashed
+      - withdrawal_possible
+      - withdrawal_done
+      example: active_ongoing
+      type: string
+    Committee:
+      description: Group of validators assigned to attest at specific slot and that
+        have the same committee index (shard in phase 1)
+      properties:
+        index:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Committee index at a slot
+        slot:
+          example: "1"
+          type: string
+        validators:
+          description: List of validator indices assigned to this committee
+          items:
+            example: "1"
+            type: string
+          type: array
+      type: object
+    AttesterSlashing:
+      description: The [`AttesterSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/core/0_beacon-chain.md#attesterslashing)
+        object from the Eth2.0 spec.
+      properties:
+        attestation_1:
+          $ref: '#/components/schemas/inline_response_200_12_attestation_1'
+        attestation_2:
+          $ref: '#/components/schemas/inline_response_200_12_attestation_1'
+      type: object
+    ProposerSlashing:
+      description: The [`ProposerSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#proposerslashing)
+        object from the Eth2.0 spec.
+      properties:
+        signed_header_1:
+          $ref: '#/components/schemas/inline_response_200_7_header'
+        signed_header_2:
+          $ref: '#/components/schemas/inline_response_200_7_header'
+      type: object
+    SignedVoluntaryExit:
+      description: The [`SignedVoluntaryExit`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#signedvoluntaryexit)
+        object from the Eth2.0 spec.
+      properties:
+        message:
+          $ref: '#/components/schemas/inline_response_200_14_message'
+        signature:
+          example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          format: bytes
+          pattern: ^0x[a-fA-F0-9]{192}$
+          type: string
+      type: object
+    AttesterDuty:
+      properties:
+        validator_pubkey:
+          description: The validator's BLS public key, uniquely identifying them.
+            _48-bytes, hex encoded with 0x prefix, case insensitive._
+          example: 0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a
+          pattern: ^0x[a-fA-F0-9]{96}$
+          type: string
+        aggregator_modulo:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Value which validator can use to calculate is_aggregator
+              (aka bytes_to_int(hash(slot_signature)[0:8]) % aggregator_modulo ==
+              0)
+        attestation_slot:
+          allOf:
+          - example: "1"
+            type: string
+          - description: The slot at which the validator must attest.
+        committee_index:
+          allOf:
+          - example: "1"
+            type: string
+          - description: The committee index
+      type: object
+    SignedAggregateAndProof:
+      properties:
+        message:
+          allOf:
+          - description: The [`AggregateAndProof`](https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/validator/0_beacon-chain-validator.md#aggregateandproof)
+              without selection_proof
+            properties:
+              aggregator_index:
+                example: "1"
+                type: string
+              attestation:
+                description: The [`Attestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestation)
+                  object from the Eth2.0 spec.
+                properties:
+                  aggregation_bits:
+                    description: Attester aggregation bits.
+                    format: byte
+                    pattern: ^0x[a-fA-F0-9]+$
+                    type: string
+                  signature:
+                    allOf:
+                    - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                      format: bytes
+                      pattern: ^0x[a-fA-F0-9]{192}$
+                      type: string
+                    - description: BLS aggregate signature.
+                  data:
+                    description: The [`AttestationData`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestationdata)
+                      object from the Eth2.0 spec.
+                    properties:
+                      slot:
+                        example: "1"
+                        type: string
+                      index:
+                        example: "1"
+                        type: string
+                      beacon_block_root:
+                        allOf:
+                        - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                          format: hex
+                          pattern: ^0x[a-fA-F0-9]{64}$
+                          type: string
+                        - description: LMD GHOST vote.
+                      source:
+                        description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                        properties:
+                          epoch:
+                            example: "1"
+                            type: string
+                          root:
+                            example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                            format: hex
+                            pattern: ^0x[a-fA-F0-9]{64}$
+                            type: string
+                        type: object
+                      target:
+                        description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                        properties:
+                          epoch:
+                            example: "1"
+                            type: string
+                          root:
+                            example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                            format: hex
+                            pattern: ^0x[a-fA-F0-9]{64}$
+                            type: string
+                        type: object
+                    type: object
+                type: object
+            type: object
+          - properties:
+              selection_proof:
+                example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                format: bytes
+                pattern: ^0x[a-fA-F0-9]{192}$
+                type: string
+            type: object
+        signature:
+          example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          format: bytes
+          pattern: ^0x[a-fA-F0-9]{192}$
+          type: string
+    Attestation:
+      description: The [`Attestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestation)
+        object from the Eth2.0 spec.
+      properties:
+        aggregation_bits:
+          description: Attester aggregation bits.
+          format: byte
+          pattern: ^0x[a-fA-F0-9]+$
+          type: string
+        signature:
+          allOf:
+          - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+            format: bytes
+            pattern: ^0x[a-fA-F0-9]{192}$
+            type: string
+          - description: BLS aggregate signature.
+        data:
+          $ref: '#/components/schemas/inline_response_200_11_data'
+      type: object
+    Fork:
+      description: The [`Fork`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#fork)
+        object from the Eth2.0 spec.
+      properties:
+        previous_version:
+          description: a fork version number
+          example: 0x00000000
+          pattern: ^0x[a-fA-F0-9]{8}$
+          type: string
+        current_version:
+          description: a fork version number
+          example: 0x00000000
+          pattern: ^0x[a-fA-F0-9]{8}$
+          type: string
+        epoch:
+          example: "1"
+          type: string
+      type: object
+    Checkpoint:
+      description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+      properties:
+        epoch:
+          example: "1"
+          type: string
+        root:
+          example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+          format: hex
+          pattern: ^0x[a-fA-F0-9]{64}$
+          type: string
+      type: object
+    PublicKey:
+      description: The validator's BLS public key, uniquely identifying them. _48-bytes,
+        hex encoded with 0x prefix, case insensitive._
+      example: 0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a
+      pattern: ^0x[a-fA-F0-9]{96}$
+      type: string
+    Uint64:
+      example: "1"
+      type: string
+    NetworkIdentity:
+      properties:
+        peer_id:
+          description: Cryptographic hash of a peer’s public key. [Read more](https://docs.libp2p.io/concepts/peer-id/)
+          example: QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+          type: string
+        enr:
+          description: Ethereum node record. [Read more](https://eips.ethereum.org/EIPS/eip-778)
+          example: enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8
+          type: string
+        p2p_addresses:
+          items:
+            allOf:
+            - description: '[Read more](https://docs.libp2p.io/reference/glossary/#multiaddr)'
+              example: /ip4/7.7.7.7/tcp/4242/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+              type: string
+            - description: Node's addresses on which eth2 rpc requests are served.
+                [Read more](https://docs.libp2p.io/reference/glossary/#multiaddr)
+          type: array
+        discovery_addresses:
+          items:
+            allOf:
+            - description: '[Read more](https://docs.libp2p.io/reference/glossary/#multiaddr)'
+              example: /ip4/7.7.7.7/tcp/4242/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+              type: string
+            - description: Node's addresses on which is listening for discv5 requests.
+                [Read more](https://docs.libp2p.io/reference/glossary/#multiaddr)
+          type: array
+        metadata:
+          $ref: '#/components/schemas/inline_response_200_15_data_metadata'
+      type: object
+    Peer:
+      properties:
+        peer_id:
+          description: Cryptographic hash of a peer’s public key. [Read more](https://docs.libp2p.io/concepts/peer-id/)
+          example: QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+          type: string
+        enr:
+          description: Ethereum node record. [Read more](https://eips.ethereum.org/EIPS/eip-778)
+          example: enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8
+          type: string
+        address:
+          description: '[Read more](https://docs.libp2p.io/reference/glossary/#multiaddr)'
+          example: /ip4/7.7.7.7/tcp/4242/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+          type: string
+        state:
+          enum:
+          - disconnected
+          - connecting
+          - connected
+          - disconnecting
+          type: string
+        direction:
+          enum:
+          - inbound
+          - outbound
+          type: string
+      type: object
+    PeerId:
+      description: Cryptographic hash of a peer’s public key. [Read more](https://docs.libp2p.io/concepts/peer-id/)
+      example: QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+      type: string
+    GenesisTime:
+      allOf:
+      - example: "1"
+        type: string
+      - example: "1590832934"
+      - description: The genesis_time configured for the beacon node, which is the
+          unix time in seconds at which the Eth2.0 chain began.
+    Version:
+      description: A string which uniquely identifies the client implementation and
+        its version; similar to [HTTP User-Agent](https://tools.ietf.org/html/rfc7231#section-5.5.3).
+      example: Lighthouse / v0.1.5 (Linux x86_64)
+      type: string
+    ForkVersion:
+      description: a fork version number
+      example: 0x00000000
+      pattern: ^0x[a-fA-F0-9]{8}$
+      type: string
+    Root:
+      example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+      format: hex
+      pattern: ^0x[a-fA-F0-9]{64}$
+      type: string
+    Hex:
+      example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+      format: hex
+      pattern: ^0x[a-fA-F0-9]{64}$
+      type: string
+    Signature:
+      example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+      format: bytes
+      pattern: ^0x[a-fA-F0-9]{192}$
+      type: string
+    inline_response_200_data:
+      example:
+        genesis_time: ""
+        genesis_validators_root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+        genesis_fork_version: 0x00000000
+      properties:
+        genesis_time:
+          allOf:
+          - example: "1"
+            type: string
+          - example: "1590832934"
+          - description: The genesis_time configured for the beacon node, which is
+              the unix time in seconds at which the Eth2.0 chain began.
+        genesis_validators_root:
+          example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+          format: hex
+          pattern: ^0x[a-fA-F0-9]{64}$
+          type: string
+        genesis_fork_version:
+          description: a fork version number
+          example: 0x00000000
+          pattern: ^0x[a-fA-F0-9]{8}$
+          type: string
+    inline_response_200:
+      example:
+        data:
+          genesis_time: ""
+          genesis_validators_root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+          genesis_fork_version: 0x00000000
+      properties:
+        data:
+          $ref: '#/components/schemas/inline_response_200_data'
+    inline_response_200_1_data:
+      example:
+        root: ""
+      properties:
+        root:
+          allOf:
+          - description: HashTreeRoot of BeaconState object
+          - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            format: hex
+            pattern: ^0x[a-fA-F0-9]{64}$
+            type: string
+    inline_response_200_1:
+      example:
+        data:
+          root: ""
+      properties:
+        data:
+          $ref: '#/components/schemas/inline_response_200_1_data'
+    inline_response_200_2_data:
+      description: The [`Fork`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#fork)
+        object from the Eth2.0 spec.
+      example:
+        previous_version: 0x00000000
+        current_version: 0x00000000
+        epoch: "1"
+      properties:
+        previous_version:
+          description: a fork version number
+          example: 0x00000000
+          pattern: ^0x[a-fA-F0-9]{8}$
+          type: string
+        current_version:
+          description: a fork version number
+          example: 0x00000000
+          pattern: ^0x[a-fA-F0-9]{8}$
+          type: string
+        epoch:
+          example: "1"
+          type: string
+    inline_response_200_2:
+      example:
+        data:
+          previous_version: 0x00000000
+          current_version: 0x00000000
+          epoch: "1"
+      properties:
+        data:
+          $ref: '#/components/schemas/inline_response_200_2_data'
+    inline_response_200_3_data_previous_justified:
+      description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+      example:
+        root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+        epoch: "1"
+      properties:
+        epoch:
+          example: "1"
+          type: string
+        root:
+          example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+          format: hex
+          pattern: ^0x[a-fA-F0-9]{64}$
+          type: string
+    inline_response_200_3_data:
+      example:
+        finalized:
+          root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+          epoch: "1"
+        previous_justified:
+          root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+          epoch: "1"
+        current_justified:
+          root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+          epoch: "1"
+      properties:
+        previous_justified:
+          $ref: '#/components/schemas/inline_response_200_3_data_previous_justified'
+        current_justified:
+          $ref: '#/components/schemas/inline_response_200_3_data_previous_justified'
+        finalized:
+          $ref: '#/components/schemas/inline_response_200_3_data_previous_justified'
+    inline_response_200_3:
+      example:
+        data:
+          finalized:
+            root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            epoch: "1"
+          previous_justified:
+            root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            epoch: "1"
+          current_justified:
+            root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            epoch: "1"
+      properties:
+        data:
+          $ref: '#/components/schemas/inline_response_200_3_data'
+    inline_response_200_4_validator:
+      example:
+        withdrawable_epoch: ""
+        exit_epoch: ""
+        slashed: false
+        effective_balance: ""
+        activation_eligibility_epoch: ""
+        pubkey: 0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a
+        withdrawal_credentials: ""
+        activation_epoch: ""
+      properties:
+        pubkey:
+          description: The validator's BLS public key, uniquely identifying them.
+            _48-bytes, hex encoded with 0x prefix, case insensitive._
+          example: 0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a
+          pattern: ^0x[a-fA-F0-9]{96}$
+          type: string
+        withdrawal_credentials:
+          allOf:
+          - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            format: hex
+            pattern: ^0x[a-fA-F0-9]{64}$
+            type: string
+          - description: Root of withdrawal credentials
+        effective_balance:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Balance at stake in Gwei.
+        slashed:
+          description: Was validator slashed (not longer active).
+          example: false
+          type: boolean
+        activation_eligibility_epoch:
+          allOf:
+          - example: "1"
+            type: string
+          - description: When criteria for activation were met.
+        activation_epoch:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Epoch when validator activated. 'FAR_FUTURE_EPOCH' if not
+              activated
+        exit_epoch:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Epoch when validator exited. 'FAR_FUTURE_EPOCH' if not exited.
+        withdrawable_epoch:
+          allOf:
+          - example: "1"
+            type: string
+          - description: When validator can withdraw or transfer funds. 'FAR_FUTURE_EPOCH'
+              if not defined
+    inline_response_200_4_data:
+      example:
+        balance: ""
+        validator:
+          withdrawable_epoch: ""
+          exit_epoch: ""
+          slashed: false
+          effective_balance: ""
+          activation_eligibility_epoch: ""
+          pubkey: 0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a
+          withdrawal_credentials: ""
+          activation_epoch: ""
+        index: ""
+        status: active_ongoing
+      properties:
+        index:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Index of validator in validator registry.
+        balance:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Current validator balance in gwei.
+        status:
+          description: |
+            Possible statuses:
+            - **pending_initialized** - When the first deposit is processed, but not enough funds are available (or not yet the end of the first epoch) to get validator into the activation queue.
+            - **pending_queued** - When validator is waiting to get activated, and have enough funds etc. while in the queue, validator activation epoch keeps changing until it gets to the front and make it through (finalization is a requirement here too).
+            - **active_ongoing** - When validator must be attesting, and have not initiated any exit.
+            - **active_exiting** - When validator is still active, but filed a voluntary request to exit.
+            - **active_slashed** - When validator is still active, but have a slashed status and is scheduled to exit.
+            - **exited_unslashed** - When validator has reached reguler exit epoch, not being slashed, and doesn't have to attest any more, but cannot withdraw yet.
+            - **exited_slashed** - When validator has reached reguler exit epoch, but was slashed, have to wait for a longer withdrawal period.
+            - **withdrawal_possible** - After validator has exited, a while later is permitted to move funds, and is truly out of the system.
+            - **withdrawal_done** - (not possible in phase0, except slashing full balance) - actually having moved funds away
+
+            [Validator status specification](https://hackmd.io/ofFJ5gOmQpu1jjHilHbdQQ)
+          enum:
+          - pending_initialized
+          - pending_queued
+          - active_ongoing
+          - active_exiting
+          - active_slashed
+          - exited_unslashed
+          - exited_slashed
+          - withdrawal_possible
+          - withdrawal_done
+          example: active_ongoing
+          type: string
+        validator:
+          $ref: '#/components/schemas/inline_response_200_4_validator'
+    inline_response_200_4:
+      example:
+        data:
+        - balance: ""
+          validator:
+            withdrawable_epoch: ""
+            exit_epoch: ""
+            slashed: false
+            effective_balance: ""
+            activation_eligibility_epoch: ""
+            pubkey: 0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a
+            withdrawal_credentials: ""
+            activation_epoch: ""
+          index: ""
+          status: active_ongoing
+        - balance: ""
+          validator:
+            withdrawable_epoch: ""
+            exit_epoch: ""
+            slashed: false
+            effective_balance: ""
+            activation_eligibility_epoch: ""
+            pubkey: 0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a
+            withdrawal_credentials: ""
+            activation_epoch: ""
+          index: ""
+          status: active_ongoing
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/inline_response_200_4_data'
+          type: array
+    inline_response_200_5:
+      example:
+        data:
+          balance: ""
+          validator:
+            withdrawable_epoch: ""
+            exit_epoch: ""
+            slashed: false
+            effective_balance: ""
+            activation_eligibility_epoch: ""
+            pubkey: 0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a
+            withdrawal_credentials: ""
+            activation_epoch: ""
+          index: ""
+          status: active_ongoing
+      properties:
+        data:
+          $ref: '#/components/schemas/inline_response_200_4_data'
+    inline_response_200_6_data:
+      description: Group of validators assigned to attest at specific slot and that
+        have the same committee index (shard in phase 1)
+      example:
+        validators:
+        - "1"
+        - "1"
+        index: ""
+        slot: "1"
+      properties:
+        index:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Committee index at a slot
+        slot:
+          example: "1"
+          type: string
+        validators:
+          description: List of validator indices assigned to this committee
+          items:
+            example: "1"
+            type: string
+          type: array
+    inline_response_200_6:
+      example:
+        data:
+        - validators:
+          - "1"
+          - "1"
+          index: ""
+          slot: "1"
+        - validators:
+          - "1"
+          - "1"
+          index: ""
+          slot: "1"
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/inline_response_200_6_data'
+          type: array
+    inline_response_200_7_header:
+      description: The [`SignedBeaconBlockHeader`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#signedbeaconblockheader)
+        object envelope from the Eth2.0 spec.
+      example:
+        signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+        message: ""
+      properties:
+        message:
+          allOf:
+          - properties:
+              slot:
+                allOf:
+                - example: "1"
+                  type: string
+                - description: The slot to which this block corresponds.
+              proposer_index:
+                allOf:
+                - example: "1"
+                  type: string
+                - description: Index of validator in validator registry.
+              parent_root:
+                allOf:
+                - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                  format: hex
+                  pattern: ^0x[a-fA-F0-9]{64}$
+                  type: string
+                - description: The signing merkle root of the parent `BeaconBlock`.
+              state_root:
+                allOf:
+                - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                  format: hex
+                  pattern: ^0x[a-fA-F0-9]{64}$
+                  type: string
+                - description: The tree hash merkle root of the `BeaconState` for
+                    the `BeaconBlock`.
+            type: object
+          - properties:
+              body_root:
+                allOf:
+                - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                  format: hex
+                  pattern: ^0x[a-fA-F0-9]{64}$
+                  type: string
+                - description: The tree hash merkle root of the `BeaconBlockBody`
+                    for the `BeaconBlock`
+            type: object
+          description: The [`BeaconBlockHeader`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#beaconblockheader)
+            object from the Eth2.0 spec.
+        signature:
+          example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          format: bytes
+          pattern: ^0x[a-fA-F0-9]{192}$
+          type: string
+    inline_response_200_7_data:
+      example:
+        root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+        header:
+          signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          message: ""
+        canonical: true
+      properties:
+        root:
+          example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+          format: hex
+          pattern: ^0x[a-fA-F0-9]{64}$
+          type: string
+        canonical:
+          type: boolean
+        header:
+          $ref: '#/components/schemas/inline_response_200_7_header'
+    inline_response_200_7:
+      example:
+        data:
+        - root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+          header:
+            signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+            message: ""
+          canonical: true
+        - root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+          header:
+            signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+            message: ""
+          canonical: true
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/inline_response_200_7_data'
+          type: array
+    inline_response_200_8_data:
+      example:
+        header:
+          signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          message: ""
+        canonical: true
+      properties:
+        canonical:
+          type: boolean
+        header:
+          $ref: '#/components/schemas/inline_response_200_7_header'
+    inline_response_200_8:
+      example:
+        data:
+          header:
+            signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+            message: ""
+          canonical: true
+      properties:
+        data:
+          $ref: '#/components/schemas/inline_response_200_8_data'
+    inline_response_200_9_data:
+      description: The [`SignedBeaconBlock`](https://github.com/ethereum/eth2.0-specs/blob/v0.10.1/specs/phase0/beacon-chain.md#signedbeaconblock)
+        object envelope from the Eth2.0 spec.
+      example:
+        signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+        message: ""
+      properties:
+        message:
+          allOf:
+          - properties:
+              slot:
+                allOf:
+                - example: "1"
+                  type: string
+                - description: The slot to which this block corresponds.
+              proposer_index:
+                allOf:
+                - example: "1"
+                  type: string
+                - description: Index of validator in validator registry.
+              parent_root:
+                allOf:
+                - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                  format: hex
+                  pattern: ^0x[a-fA-F0-9]{64}$
+                  type: string
+                - description: The signing merkle root of the parent `BeaconBlock`.
+              state_root:
+                allOf:
+                - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                  format: hex
+                  pattern: ^0x[a-fA-F0-9]{64}$
+                  type: string
+                - description: The tree hash merkle root of the `BeaconState` for
+                    the `BeaconBlock`.
+            type: object
+          - properties:
+              body:
+                description: The [`BeaconBlockBody`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#beaconblockbody)
+                  object from the Eth2.0 spec.
+                properties:
+                  randao_reveal:
+                    allOf:
+                    - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                      format: bytes
+                      pattern: ^0x[a-fA-F0-9]{192}$
+                      type: string
+                    - description: The RanDAO reveal value provided by the validator.
+                  eth1_data:
+                    description: The [`Eth1Data`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#eth1data)
+                      object from the Eth2.0 spec.
+                    properties:
+                      deposit_root:
+                        allOf:
+                        - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                          format: hex
+                          pattern: ^0x[a-fA-F0-9]{64}$
+                          type: string
+                        - description: Root of the deposit tree.
+                      deposit_count:
+                        allOf:
+                        - example: "1"
+                          type: string
+                        - description: Total number of deposits.
+                      block_hash:
+                        allOf:
+                        - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                          format: hex
+                          pattern: ^0x[a-fA-F0-9]{64}$
+                          type: string
+                        - description: Ethereum 1.x block hash.
+                    type: object
+                  graffiti:
+                    format: byte
+                    pattern: ^0x[a-fA-F0-9]{64}$
+                    type: string
+                  proposer_slashings:
+                    items:
+                      description: The [`ProposerSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#proposerslashing)
+                        object from the Eth2.0 spec.
+                      properties:
+                        signed_header_1:
+                          description: The [`SignedBeaconBlockHeader`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#signedbeaconblockheader)
+                            object envelope from the Eth2.0 spec.
+                          properties:
+                            message:
+                              allOf:
+                              - properties:
+                                  slot:
+                                    allOf:
+                                    - example: "1"
+                                      type: string
+                                    - description: The slot to which this block corresponds.
+                                  proposer_index:
+                                    allOf:
+                                    - example: "1"
+                                      type: string
+                                    - description: Index of validator in validator
+                                        registry.
+                                  parent_root:
+                                    allOf:
+                                    - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                    - description: The signing merkle root of the
+                                        parent `BeaconBlock`.
+                                  state_root:
+                                    allOf:
+                                    - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                    - description: The tree hash merkle root of the
+                                        `BeaconState` for the `BeaconBlock`.
+                                type: object
+                              - properties:
+                                  body_root:
+                                    allOf:
+                                    - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                    - description: The tree hash merkle root of the
+                                        `BeaconBlockBody` for the `BeaconBlock`
+                                type: object
+                              description: The [`BeaconBlockHeader`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#beaconblockheader)
+                                object from the Eth2.0 spec.
+                            signature:
+                              example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                              format: bytes
+                              pattern: ^0x[a-fA-F0-9]{192}$
+                              type: string
+                          type: object
+                        signed_header_2:
+                          description: The [`SignedBeaconBlockHeader`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#signedbeaconblockheader)
+                            object envelope from the Eth2.0 spec.
+                          properties:
+                            message:
+                              allOf:
+                              - properties:
+                                  slot:
+                                    allOf:
+                                    - example: "1"
+                                      type: string
+                                    - description: The slot to which this block corresponds.
+                                  proposer_index:
+                                    allOf:
+                                    - example: "1"
+                                      type: string
+                                    - description: Index of validator in validator
+                                        registry.
+                                  parent_root:
+                                    allOf:
+                                    - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                    - description: The signing merkle root of the
+                                        parent `BeaconBlock`.
+                                  state_root:
+                                    allOf:
+                                    - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                    - description: The tree hash merkle root of the
+                                        `BeaconState` for the `BeaconBlock`.
+                                type: object
+                              - properties:
+                                  body_root:
+                                    allOf:
+                                    - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                    - description: The tree hash merkle root of the
+                                        `BeaconBlockBody` for the `BeaconBlock`
+                                type: object
+                              description: The [`BeaconBlockHeader`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#beaconblockheader)
+                                object from the Eth2.0 spec.
+                            signature:
+                              example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                              format: bytes
+                              pattern: ^0x[a-fA-F0-9]{192}$
+                              type: string
+                          type: object
+                      type: object
+                    type: array
+                  attester_slashings:
+                    items:
+                      description: The [`AttesterSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/core/0_beacon-chain.md#attesterslashing)
+                        object from the Eth2.0 spec.
+                      properties:
+                        attestation_1:
+                          description: The [`IndexedAttestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#indexedattestation)
+                            object from the Eth2.0 spec.
+                          properties:
+                            attesting_indices:
+                              description: Attesting validator indices
+                              items:
+                                example: "1"
+                                type: string
+                              maxItems: 2048
+                              type: array
+                            signature:
+                              allOf:
+                              - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                                format: bytes
+                                pattern: ^0x[a-fA-F0-9]{192}$
+                                type: string
+                              - description: The BLS signature of the `IndexedAttestation`,
+                                  created by the validator of the attestation.
+                            data:
+                              description: The [`AttestationData`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestationdata)
+                                object from the Eth2.0 spec.
+                              properties:
+                                slot:
+                                  example: "1"
+                                  type: string
+                                index:
+                                  example: "1"
+                                  type: string
+                                beacon_block_root:
+                                  allOf:
+                                  - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                    format: hex
+                                    pattern: ^0x[a-fA-F0-9]{64}$
+                                    type: string
+                                  - description: LMD GHOST vote.
+                                source:
+                                  description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                                  properties:
+                                    epoch:
+                                      example: "1"
+                                      type: string
+                                    root:
+                                      example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                  type: object
+                                target:
+                                  description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                                  properties:
+                                    epoch:
+                                      example: "1"
+                                      type: string
+                                    root:
+                                      example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                  type: object
+                              type: object
+                          type: object
+                        attestation_2:
+                          description: The [`IndexedAttestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#indexedattestation)
+                            object from the Eth2.0 spec.
+                          properties:
+                            attesting_indices:
+                              description: Attesting validator indices
+                              items:
+                                example: "1"
+                                type: string
+                              maxItems: 2048
+                              type: array
+                            signature:
+                              allOf:
+                              - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                                format: bytes
+                                pattern: ^0x[a-fA-F0-9]{192}$
+                                type: string
+                              - description: The BLS signature of the `IndexedAttestation`,
+                                  created by the validator of the attestation.
+                            data:
+                              description: The [`AttestationData`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestationdata)
+                                object from the Eth2.0 spec.
+                              properties:
+                                slot:
+                                  example: "1"
+                                  type: string
+                                index:
+                                  example: "1"
+                                  type: string
+                                beacon_block_root:
+                                  allOf:
+                                  - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                    format: hex
+                                    pattern: ^0x[a-fA-F0-9]{64}$
+                                    type: string
+                                  - description: LMD GHOST vote.
+                                source:
+                                  description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                                  properties:
+                                    epoch:
+                                      example: "1"
+                                      type: string
+                                    root:
+                                      example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                  type: object
+                                target:
+                                  description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                                  properties:
+                                    epoch:
+                                      example: "1"
+                                      type: string
+                                    root:
+                                      example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                      format: hex
+                                      pattern: ^0x[a-fA-F0-9]{64}$
+                                      type: string
+                                  type: object
+                              type: object
+                          type: object
+                      type: object
+                    type: array
+                  attestations:
+                    items:
+                      description: The [`Attestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestation)
+                        object from the Eth2.0 spec.
+                      properties:
+                        aggregation_bits:
+                          description: Attester aggregation bits.
+                          format: byte
+                          pattern: ^0x[a-fA-F0-9]+$
+                          type: string
+                        signature:
+                          allOf:
+                          - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                            format: bytes
+                            pattern: ^0x[a-fA-F0-9]{192}$
+                            type: string
+                          - description: BLS aggregate signature.
+                        data:
+                          description: The [`AttestationData`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestationdata)
+                            object from the Eth2.0 spec.
+                          properties:
+                            slot:
+                              example: "1"
+                              type: string
+                            index:
+                              example: "1"
+                              type: string
+                            beacon_block_root:
+                              allOf:
+                              - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                format: hex
+                                pattern: ^0x[a-fA-F0-9]{64}$
+                                type: string
+                              - description: LMD GHOST vote.
+                            source:
+                              description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                              properties:
+                                epoch:
+                                  example: "1"
+                                  type: string
+                                root:
+                                  example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                  format: hex
+                                  pattern: ^0x[a-fA-F0-9]{64}$
+                                  type: string
+                              type: object
+                            target:
+                              description: The [`Checkpoint`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#checkpoint
+                              properties:
+                                epoch:
+                                  example: "1"
+                                  type: string
+                                root:
+                                  example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                  format: hex
+                                  pattern: ^0x[a-fA-F0-9]{64}$
+                                  type: string
+                              type: object
+                          type: object
+                      type: object
+                    type: array
+                  deposits:
+                    items:
+                      description: The [`Deposit`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#deposit)
+                        object from the Eth2.0 spec.
+                      properties:
+                        proof:
+                          description: Branch in the deposit tree.
+                          items:
+                            allOf:
+                            - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                              format: hex
+                              pattern: ^0x[a-fA-F0-9]{64}$
+                              type: string
+                          maxItems: 32
+                          minItems: 32
+                          type: array
+                        data:
+                          description: The [`DepositData`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#depositdata)
+                            object from the Eth2.0 spec.
+                          properties:
+                            pubkey:
+                              description: The validator's BLS public key, uniquely
+                                identifying them. _48-bytes, hex encoded with 0x prefix,
+                                case insensitive._
+                              example: 0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a
+                              pattern: ^0x[a-fA-F0-9]{96}$
+                              type: string
+                            withdrawal_credentials:
+                              allOf:
+                              - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                                format: hex
+                                pattern: ^0x[a-fA-F0-9]{64}$
+                                type: string
+                              - description: The withdrawal credentials.
+                            amount:
+                              allOf:
+                              - example: "1"
+                                type: string
+                              - description: Amount in Gwei.
+                            signature:
+                              allOf:
+                              - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+                                format: bytes
+                                pattern: ^0x[a-fA-F0-9]{192}$
+                                type: string
+                              - description: Container self-signature.
+                          type: object
+                      type: object
+                    type: array
+                  voluntary_exits:
+                    items:
+                      description: The [`VoluntaryExit`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#voluntaryexit)
+                        object from the Eth2.0 spec.
+                      properties:
+                        epoch:
+                          allOf:
+                          - example: "1"
+                            type: string
+                          - description: Minimum epoch for processing exit.
+                        validator_index:
+                          allOf:
+                          - example: "1"
+                            type: string
+                          - description: Index of the exiting validator.
+                      type: object
+                    type: array
+                type: object
+            type: object
+          description: The [`BeaconBlock`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#beaconblock)
+            object from the Eth2.0 spec.
+        signature:
+          example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          format: bytes
+          pattern: ^0x[a-fA-F0-9]{192}$
+          type: string
+    inline_response_200_9:
+      example:
+        data:
+          signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          message: ""
+      properties:
+        data:
+          $ref: '#/components/schemas/inline_response_200_9_data'
+    inline_response_200_10_data:
+      example:
+        root: ""
+      properties:
+        root:
+          allOf:
+          - description: HashTreeRoot of BeaconBlock/BeaconBlockHeader object
+          - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            format: hex
+            pattern: ^0x[a-fA-F0-9]{64}$
+            type: string
+    inline_response_200_10:
+      example:
+        data:
+          root: ""
+      properties:
+        data:
+          $ref: '#/components/schemas/inline_response_200_10_data'
+    inline_response_200_11_data:
+      description: The [`AttestationData`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestationdata)
+        object from the Eth2.0 spec.
+      example:
+        beacon_block_root: ""
+        index: "1"
+        slot: "1"
+        source:
+          root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+          epoch: "1"
+        target:
+          root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+          epoch: "1"
+      properties:
+        slot:
+          example: "1"
+          type: string
+        index:
+          example: "1"
+          type: string
+        beacon_block_root:
+          allOf:
+          - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            format: hex
+            pattern: ^0x[a-fA-F0-9]{64}$
+            type: string
+          - description: LMD GHOST vote.
+        source:
+          $ref: '#/components/schemas/inline_response_200_3_data_previous_justified'
+        target:
+          $ref: '#/components/schemas/inline_response_200_3_data_previous_justified'
+    inline_response_200_11_data_1:
+      description: The [`Attestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestation)
+        object from the Eth2.0 spec.
+      example:
+        data:
+          beacon_block_root: ""
+          index: "1"
+          slot: "1"
+          source:
+            root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            epoch: "1"
+          target:
+            root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            epoch: "1"
+        signature: ""
+        aggregation_bits: aggregation_bits
+      properties:
+        aggregation_bits:
+          description: Attester aggregation bits.
+          format: byte
+          pattern: ^0x[a-fA-F0-9]+$
+          type: string
+        signature:
+          allOf:
+          - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+            format: bytes
+            pattern: ^0x[a-fA-F0-9]{192}$
+            type: string
+          - description: BLS aggregate signature.
+        data:
+          $ref: '#/components/schemas/inline_response_200_11_data'
+    inline_response_200_11:
+      example:
+        data:
+        - data:
+            beacon_block_root: ""
+            index: "1"
+            slot: "1"
+            source:
+              root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+              epoch: "1"
+            target:
+              root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+              epoch: "1"
+          signature: ""
+          aggregation_bits: aggregation_bits
+        - data:
+            beacon_block_root: ""
+            index: "1"
+            slot: "1"
+            source:
+              root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+              epoch: "1"
+            target:
+              root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+              epoch: "1"
+          signature: ""
+          aggregation_bits: aggregation_bits
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/inline_response_200_11_data_1'
+          type: array
+    inline_object:
+      description: The [`Attestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#attestation)
+        object from the Eth2.0 spec.
+      properties:
+        aggregation_bits:
+          description: Attester aggregation bits.
+          format: byte
+          pattern: ^0x[a-fA-F0-9]+$
+          type: string
+        signature:
+          allOf:
+          - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+            format: bytes
+            pattern: ^0x[a-fA-F0-9]{192}$
+            type: string
+          - description: BLS aggregate signature.
+        data:
+          $ref: '#/components/schemas/inline_response_200_11_data'
+      type: object
+    inline_response_200_12_attestation_1:
+      description: The [`IndexedAttestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#indexedattestation)
+        object from the Eth2.0 spec.
+      example:
+        attesting_indices:
+        - "1"
+        - "1"
+        - "1"
+        - "1"
+        - "1"
+        data:
+          beacon_block_root: ""
+          index: "1"
+          slot: "1"
+          source:
+            root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            epoch: "1"
+          target:
+            root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            epoch: "1"
+        signature: ""
+      properties:
+        attesting_indices:
+          description: Attesting validator indices
+          items:
+            example: "1"
+            type: string
+          maxItems: 2048
+          type: array
+        signature:
+          allOf:
+          - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+            format: bytes
+            pattern: ^0x[a-fA-F0-9]{192}$
+            type: string
+          - description: The BLS signature of the `IndexedAttestation`, created by
+              the validator of the attestation.
+        data:
+          $ref: '#/components/schemas/inline_response_200_11_data'
+    inline_response_200_12_data:
+      description: The [`AttesterSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/core/0_beacon-chain.md#attesterslashing)
+        object from the Eth2.0 spec.
+      example:
+        attestation_2:
+          attesting_indices:
+          - "1"
+          - "1"
+          - "1"
+          - "1"
+          - "1"
+          data:
+            beacon_block_root: ""
+            index: "1"
+            slot: "1"
+            source:
+              root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+              epoch: "1"
+            target:
+              root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+              epoch: "1"
+          signature: ""
+        attestation_1:
+          attesting_indices:
+          - "1"
+          - "1"
+          - "1"
+          - "1"
+          - "1"
+          data:
+            beacon_block_root: ""
+            index: "1"
+            slot: "1"
+            source:
+              root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+              epoch: "1"
+            target:
+              root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+              epoch: "1"
+          signature: ""
+      properties:
+        attestation_1:
+          $ref: '#/components/schemas/inline_response_200_12_attestation_1'
+        attestation_2:
+          $ref: '#/components/schemas/inline_response_200_12_attestation_1'
+    inline_response_200_12:
+      example:
+        data:
+        - attestation_2:
+            attesting_indices:
+            - "1"
+            - "1"
+            - "1"
+            - "1"
+            - "1"
+            data:
+              beacon_block_root: ""
+              index: "1"
+              slot: "1"
+              source:
+                root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                epoch: "1"
+              target:
+                root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                epoch: "1"
+            signature: ""
+          attestation_1:
+            attesting_indices:
+            - "1"
+            - "1"
+            - "1"
+            - "1"
+            - "1"
+            data:
+              beacon_block_root: ""
+              index: "1"
+              slot: "1"
+              source:
+                root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                epoch: "1"
+              target:
+                root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                epoch: "1"
+            signature: ""
+        - attestation_2:
+            attesting_indices:
+            - "1"
+            - "1"
+            - "1"
+            - "1"
+            - "1"
+            data:
+              beacon_block_root: ""
+              index: "1"
+              slot: "1"
+              source:
+                root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                epoch: "1"
+              target:
+                root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                epoch: "1"
+            signature: ""
+          attestation_1:
+            attesting_indices:
+            - "1"
+            - "1"
+            - "1"
+            - "1"
+            - "1"
+            data:
+              beacon_block_root: ""
+              index: "1"
+              slot: "1"
+              source:
+                root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                epoch: "1"
+              target:
+                root: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+                epoch: "1"
+            signature: ""
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/inline_response_200_12_data'
+          type: array
+    inline_object_1:
+      description: The [`AttesterSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/core/0_beacon-chain.md#attesterslashing)
+        object from the Eth2.0 spec.
+      properties:
+        attestation_1:
+          $ref: '#/components/schemas/inline_response_200_12_attestation_1'
+        attestation_2:
+          $ref: '#/components/schemas/inline_response_200_12_attestation_1'
+      type: object
+    inline_response_200_13_data:
+      description: The [`ProposerSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#proposerslashing)
+        object from the Eth2.0 spec.
+      example:
+        signed_header_2:
+          signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          message: ""
+        signed_header_1:
+          signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          message: ""
+      properties:
+        signed_header_1:
+          $ref: '#/components/schemas/inline_response_200_7_header'
+        signed_header_2:
+          $ref: '#/components/schemas/inline_response_200_7_header'
+    inline_response_200_13:
+      example:
+        data:
+        - signed_header_2:
+            signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+            message: ""
+          signed_header_1:
+            signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+            message: ""
+        - signed_header_2:
+            signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+            message: ""
+          signed_header_1:
+            signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+            message: ""
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/inline_response_200_13_data'
+          type: array
+    inline_object_2:
+      description: The [`ProposerSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#proposerslashing)
+        object from the Eth2.0 spec.
+      properties:
+        signed_header_1:
+          $ref: '#/components/schemas/inline_response_200_7_header'
+        signed_header_2:
+          $ref: '#/components/schemas/inline_response_200_7_header'
+      type: object
+    inline_response_200_14_message:
+      description: The [`VoluntaryExit`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#voluntaryexit)
+        object from the Eth2.0 spec.
+      example:
+        validator_index: ""
+        epoch: ""
+      properties:
+        epoch:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Minimum epoch for processing exit.
+        validator_index:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Index of the exiting validator.
+    inline_response_200_14_data:
+      description: The [`SignedVoluntaryExit`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#signedvoluntaryexit)
+        object from the Eth2.0 spec.
+      example:
+        signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+        message:
+          validator_index: ""
+          epoch: ""
+      properties:
+        message:
+          $ref: '#/components/schemas/inline_response_200_14_message'
+        signature:
+          example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          format: bytes
+          pattern: ^0x[a-fA-F0-9]{192}$
+          type: string
+    inline_response_200_14:
+      example:
+        data:
+        - signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          message:
+            validator_index: ""
+            epoch: ""
+        - signature: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          message:
+            validator_index: ""
+            epoch: ""
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/inline_response_200_14_data'
+          type: array
+    inline_object_3:
+      description: The [`SignedVoluntaryExit`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#signedvoluntaryexit)
+        object from the Eth2.0 spec.
+      properties:
+        message:
+          $ref: '#/components/schemas/inline_response_200_14_message'
+        signature:
+          example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+          format: bytes
+          pattern: ^0x[a-fA-F0-9]{192}$
+          type: string
+      type: object
+    inline_response_200_15_data_metadata:
+      description: Based on eth2 [Metadata object](https://github.com/ethereum/eth2.0-specs/blob/v0.12.0/specs/phase0/p2p-interface.md#metadata)
+      example:
+        seq_number: ""
+        attnets: ""
+      properties:
+        seq_number:
+          allOf:
+          - description: Uint64 starting at 0 used to version the node's metadata.
+              If any other field in the local MetaData changes, the node MUST increment
+              seq_number by 1.
+          - example: "1"
+            type: string
+        attnets:
+          allOf:
+          - description: Bitvector representing the node's persistent attestation
+              subnet subscriptions.
+          - format: hex
+            pattern: ^0x[a-fA-F0-9]{2,}$
+            type: string
+    inline_response_200_15_data:
+      example:
+        metadata:
+          seq_number: ""
+          attnets: ""
+        discovery_addresses:
+        - ""
+        - ""
+        p2p_addresses:
+        - ""
+        - ""
+        enr: enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8
+        peer_id: QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+      properties:
+        peer_id:
+          description: Cryptographic hash of a peer’s public key. [Read more](https://docs.libp2p.io/concepts/peer-id/)
+          example: QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+          type: string
+        enr:
+          description: Ethereum node record. [Read more](https://eips.ethereum.org/EIPS/eip-778)
+          example: enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8
+          type: string
+        p2p_addresses:
+          items:
+            allOf:
+            - description: '[Read more](https://docs.libp2p.io/reference/glossary/#multiaddr)'
+              example: /ip4/7.7.7.7/tcp/4242/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+              type: string
+            - description: Node's addresses on which eth2 rpc requests are served.
+                [Read more](https://docs.libp2p.io/reference/glossary/#multiaddr)
+          type: array
+        discovery_addresses:
+          items:
+            allOf:
+            - description: '[Read more](https://docs.libp2p.io/reference/glossary/#multiaddr)'
+              example: /ip4/7.7.7.7/tcp/4242/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+              type: string
+            - description: Node's addresses on which is listening for discv5 requests.
+                [Read more](https://docs.libp2p.io/reference/glossary/#multiaddr)
+          type: array
+        metadata:
+          $ref: '#/components/schemas/inline_response_200_15_data_metadata'
+    inline_response_200_15:
+      example:
+        data:
+          metadata:
+            seq_number: ""
+            attnets: ""
+          discovery_addresses:
+          - ""
+          - ""
+          p2p_addresses:
+          - ""
+          - ""
+          enr: enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8
+          peer_id: QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+      properties:
+        data:
+          $ref: '#/components/schemas/inline_response_200_15_data'
+    inline_response_200_16_data:
+      example:
+        address: /ip4/7.7.7.7/tcp/4242/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+        enr: enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8
+        state: disconnected
+        peer_id: QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+        direction: inbound
+      properties:
+        peer_id:
+          description: Cryptographic hash of a peer’s public key. [Read more](https://docs.libp2p.io/concepts/peer-id/)
+          example: QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+          type: string
+        enr:
+          description: Ethereum node record. [Read more](https://eips.ethereum.org/EIPS/eip-778)
+          example: enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8
+          type: string
+        address:
+          description: '[Read more](https://docs.libp2p.io/reference/glossary/#multiaddr)'
+          example: /ip4/7.7.7.7/tcp/4242/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+          type: string
+        state:
+          enum:
+          - disconnected
+          - connecting
+          - connected
+          - disconnecting
+          type: string
+        direction:
+          enum:
+          - inbound
+          - outbound
+          type: string
+    inline_response_200_16:
+      example:
+        data:
+        - address: /ip4/7.7.7.7/tcp/4242/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+          enr: enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8
+          state: disconnected
+          peer_id: QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+          direction: inbound
+        - address: /ip4/7.7.7.7/tcp/4242/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+          enr: enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8
+          state: disconnected
+          peer_id: QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+          direction: inbound
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/inline_response_200_16_data'
+          type: array
+    inline_response_200_17:
+      example:
+        data:
+          address: /ip4/7.7.7.7/tcp/4242/p2p/QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+          enr: enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8
+          state: disconnected
+          peer_id: QmYyQSo1c1Ym7orWxLYvCrM2EmxFTANf8wXmmE7DWjhx5N
+          direction: inbound
+      properties:
+        data:
+          $ref: '#/components/schemas/inline_response_200_16_data'
+    inline_response_200_18_data:
+      example:
+        version: Lighthouse / v0.1.5 (Linux x86_64)
+      properties:
+        version:
+          description: A string which uniquely identifies the client implementation
+            and its version; similar to [HTTP User-Agent](https://tools.ietf.org/html/rfc7231#section-5.5.3).
+          example: Lighthouse / v0.1.5 (Linux x86_64)
+          type: string
+    inline_response_200_18:
+      example:
+        data:
+          version: Lighthouse / v0.1.5 (Linux x86_64)
+      properties:
+        data:
+          $ref: '#/components/schemas/inline_response_200_18_data'
+    inline_response_200_19_data:
+      example:
+        head_slot: ""
+        sync_distance: ""
+      properties:
+        head_slot:
+          allOf:
+          - description: Head slot node is trying to reach
+          - example: "1"
+            type: string
+        sync_distance:
+          allOf:
+          - description: How many slots node needs to process to reach head. 0 if
+              synced.
+          - example: "1"
+            type: string
+    inline_response_200_19:
+      example:
+        data:
+          head_slot: ""
+          sync_distance: ""
+      properties:
+        data:
+          $ref: '#/components/schemas/inline_response_200_19_data'
+    inline_response_200_20:
+      example:
+        data:
+        - previous_version: 0x00000000
+          current_version: 0x00000000
+          epoch: "1"
+        - previous_version: 0x00000000
+          current_version: 0x00000000
+          epoch: "1"
+      properties:
+        data:
+          items:
+            $ref: '#/components/schemas/inline_response_200_2_data'
+          type: array
+    inline_response_200_21:
+      example:
+        data: '{}'
+      properties:
+        data:
+          description: |
+            Key value mapping of Phase 0[spec variables](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/configs/mainnet.yaml).
+            Values are returned with following format:
+              - any value starting with 0x in the spec is returned as a hex string
+              - all other values are returned as number
+          type: object
+    inline_response_200_22_data:
+      example:
+        address: ""
+        chain_id: 1
+      properties:
+        chain_id:
+          description: Id of Eth1 chain on which contract is deployed.
+          example: 1
+          format: int32
+          minimum: 1
+          type: integer
+        address:
+          allOf:
+          - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            format: hex
+            pattern: ^0x[a-fA-F0-9]{64}$
+            type: string
+          - description: Hex encoded deposit contract address with 0x prefix
+          - example: 0x1Db3439a222C519ab44bb1144fC28167b4Fa6EE6
+    inline_response_200_22:
+      example:
+        data:
+          address: ""
+          chain_id: 1
+      properties:
+        data:
+          $ref: '#/components/schemas/inline_response_200_22_data'
+    BeaconBlock_allOf:
+      properties:
+        slot:
+          allOf:
+          - example: "1"
+            type: string
+          - description: The slot to which this block corresponds.
+        proposer_index:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Index of validator in validator registry.
+        parent_root:
+          allOf:
+          - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            format: hex
+            pattern: ^0x[a-fA-F0-9]{64}$
+            type: string
+          - description: The signing merkle root of the parent `BeaconBlock`.
+        state_root:
+          allOf:
+          - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            format: hex
+            pattern: ^0x[a-fA-F0-9]{64}$
+            type: string
+          - description: The tree hash merkle root of the `BeaconState` for the `BeaconBlock`.
+    BeaconBlock_allOf_1_body_eth1_data:
+      description: The [`Eth1Data`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#eth1data)
+        object from the Eth2.0 spec.
+      properties:
+        deposit_root:
+          allOf:
+          - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            format: hex
+            pattern: ^0x[a-fA-F0-9]{64}$
+            type: string
+          - description: Root of the deposit tree.
+        deposit_count:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Total number of deposits.
+        block_hash:
+          allOf:
+          - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            format: hex
+            pattern: ^0x[a-fA-F0-9]{64}$
+            type: string
+          - description: Ethereum 1.x block hash.
+    BeaconBlock_allOf_1_body_data:
+      description: The [`DepositData`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#depositdata)
+        object from the Eth2.0 spec.
+      properties:
+        pubkey:
+          description: The validator's BLS public key, uniquely identifying them.
+            _48-bytes, hex encoded with 0x prefix, case insensitive._
+          example: 0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a
+          pattern: ^0x[a-fA-F0-9]{96}$
+          type: string
+        withdrawal_credentials:
+          allOf:
+          - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+            format: hex
+            pattern: ^0x[a-fA-F0-9]{64}$
+            type: string
+          - description: The withdrawal credentials.
+        amount:
+          allOf:
+          - example: "1"
+            type: string
+          - description: Amount in Gwei.
+        signature:
+          allOf:
+          - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+            format: bytes
+            pattern: ^0x[a-fA-F0-9]{192}$
+            type: string
+          - description: Container self-signature.
+    BeaconBlock_allOf_1_body_deposits:
+      description: The [`Deposit`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#deposit)
+        object from the Eth2.0 spec.
+      properties:
+        proof:
+          description: Branch in the deposit tree.
+          items:
+            allOf:
+            - example: 0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2
+              format: hex
+              pattern: ^0x[a-fA-F0-9]{64}$
+              type: string
+          maxItems: 32
+          minItems: 32
+          type: array
+        data:
+          $ref: '#/components/schemas/BeaconBlock_allOf_1_body_data'
+    BeaconBlock_allOf_1_body:
+      description: The [`BeaconBlockBody`](https://github.com/ethereum/eth2.0-specs/blob/v0.11.1/specs/phase0/beacon-chain.md#beaconblockbody)
+        object from the Eth2.0 spec.
+      properties:
+        randao_reveal:
+          allOf:
+          - example: 0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505
+            format: bytes
+            pattern: ^0x[a-fA-F0-9]{192}$
+            type: string
+          - description: The RanDAO reveal value provided by the validator.
+        eth1_data:
+          $ref: '#/components/schemas/BeaconBlock_allOf_1_body_eth1_data'
+        graffiti:
+          format: byte
+          pattern: ^0x[a-fA-F0-9]{64}$
+          type: string
+        proposer_slashings:
+          items:
+            $ref: '#/components/schemas/inline_response_200_13_data'
+          type: array
+        attester_slashings:
+          items:
+            $ref: '#/components/schemas/inline_response_200_12_data'
+          type: array
+        attestations:
+          items:
+            $ref: '#/components/schemas/inline_response_200_11_data_1'
+          type: array
+        deposits:
+          items:
+            $ref: '#/components/schemas/BeaconBlock_allOf_1_body_deposits'
+          type: array
+        voluntary_exits:
+          items:
+            $ref: '#/components/schemas/inline_response_200_14_message'
+          type: array
+    BeaconBlock_allOf_1:
+      properties:
+        body:
+          $ref: '#/components/schemas/BeaconBlock_allOf_1_body'

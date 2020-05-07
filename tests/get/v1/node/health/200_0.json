@@ -1,0 +1,4 @@
+{
+  "method": "GET",
+  "route": "/v1/node/health"
+}

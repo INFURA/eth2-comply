@@ -1,0 +1,45 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "github.com/INFURA/eth2-comply/cmd/eth2-comply",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//pkg/oapi:go_default_library",
+        "//pkg/testcases:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "eth2-comply",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
+
+go_binary(
+    name = "linux_amd64",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+    goos = "linux",
+    goarch = "amd64",
+    pure = "on",
+)
+
+go_binary(
+    name = "darwin_amd64",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+    goos = "darwin",
+    goarch = "amd64",
+    pure = "on",
+)
+
+go_binary(
+    name = "windows_amd64",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+    goos = "windows",
+    goarch = "amd64",
+    pure = "on",
+)

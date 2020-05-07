@@ -1,0 +1,66 @@
+name: Release
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  release_master:
+    name: Release (master)
+    runs-on: ubuntu-18.04
+    container:
+      image: l.gcr.io/google/bazel:3.1.0
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref }}
+      - name: get version
+        id: get_version
+        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/}
+      - name: build (all platforms)
+        uses: ./.github/actions/build
+      - name: create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: eth2-comply ${{ github.ref }}
+      - name: upload tests
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: bazel-bin/tests.zip
+          asset_name: tests-${{ steps.get_version.outputs.version }}.zip
+          asset_content_type: "application/zip"
+      - name: upload linux_amd64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: bazel-bin/linux_amd64.zip
+          asset_name: linux_amd64-${{ steps.get_version.outputs.version }}.zip
+          asset_content_type: "application/zip"
+      - name: upload darwin_amd64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: bazel-bin/darwin_amd64.zip
+          asset_name: darwin_amd64-${{ steps.get_version.outputs.version }}.zip
+          asset_content_type: "application/zip"
+      - name: upload windows_amd64
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: bazel-bin/windows_amd64.zip
+          asset_name: windows_amd64-${{ steps.get_version.outputs.version }}.zip
+          asset_content_type: "application/zip"

@@ -1,0 +1,5 @@
+name: Build (all platforms)
+description: Builds eth2-comply for all supported platforms
+runs:
+  using: node12
+  main: index.js

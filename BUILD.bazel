@@ -1,0 +1,31 @@
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+gazelle(
+    name = "gazelle",
+    prefix = "github.com/INFURA/eth2-comply",
+)
+
+load("@rules_pkg//:pkg.bzl", "pkg_zip")
+
+genrule(
+    name = "tests",
+    srcs = glob(["tests/**"]),
+    tools = ["@bazel_tools//tools/zip:zipper"],
+    outs = ["tests.zip"],
+    cmd = "$(location @bazel_tools//tools/zip:zipper) c $@ $(SRCS)",
+)
+
+pkg_zip(
+    name = "linux_amd64",
+    srcs = ["//cmd/eth2-comply:linux_amd64"],
+)
+
+pkg_zip(
+    name = "darwin_amd64",
+    srcs = ["//cmd/eth2-comply:darwin_amd64"],
+)
+
+pkg_zip(
+    name = "windows_amd64",
+    srcs = ["//cmd/eth2-comply:windows_amd64"],
+)
