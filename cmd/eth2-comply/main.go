@@ -20,6 +20,7 @@ func main() {
 	outDir := flag.String("outDir", "/tmp", "A directory where zip files will be downloaded and unzipped.")
 	target := flag.String("target", "NO TARGET PROVIDED", "A URL to run tests against, for example http://localhost:5051")
 	timeout := flag.String("timeout", "10m", "The time to wait for a case execution to complete. For example, 3600s, 60m, 1h")
+	subset := flag.String("subset", "/", "The subset of paths to run tests for. For example, set this to \"/v1/node\" to only run tests for routes in that path. Defaults to \"/\" (all paths).")
 	flag.Parse()
 
 	// Setup OAPI client.
@@ -51,7 +52,7 @@ func main() {
 
 	// Execute test cases.
 	for _, testCase := range testCases {
-		go testCase.Exec(ctx)
+		go testCase.Exec(ctx, *subset)
 	}
 
 	// Concurrent helper function cancels contexts (tests) that timeout.

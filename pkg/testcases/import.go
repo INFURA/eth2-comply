@@ -63,7 +63,6 @@ func All(opts *TestsCasesOpts) ([]*Case, error) {
 	}
 
 	for _, config := range configs {
-		config.Route = opts.Target + config.Route
 		if err != nil {
 			return nil, err
 		}
