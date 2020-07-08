@@ -24,6 +24,7 @@ type Case struct {
 	Config     CaseConfig
 	OapiClient *eth2spec.APIClient
 	Result     Result
+	Skipped    bool
 	Done       chan struct{}
 }
 
@@ -83,8 +84,15 @@ func (e ExpectationsError) Error() string {
 //    (is ill-formed), or a network condition prevented contacting the target.
 //
 // Otherwise, the Result is marked as a Success and the Error is left nil.
-func (c *Case) Exec(ctx context.Context) {
+func (c *Case) Exec(ctx context.Context, pathsRoot string) {
 	defer close(c.Done)
+
+	// If a test should be excluded because it is not beneath the paths root,
+	// skip it here.
+	if !strings.HasPrefix(c.Config.Route, pathsRoot) {
+		c.Skipped = true
+		return
+	}
 
 	// If a test specifies an await slot, wait for the node to sync that slot.
 	// Otherwise, just wait for the node to be healthy. awaitTargetHasSlot
@@ -154,7 +162,9 @@ func (c Case) PrintResults() {
 
 	fmt.Printf("%s ", routeString)
 
-	if !c.Result.Success {
+	if c.Skipped {
+		fmt.Printf("Skipped\n")
+	} else if !c.Result.Success {
 		fmt.Printf("❌\n")
 		fmt.Println(c.Result.Error)
 	} else {
