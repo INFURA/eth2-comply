@@ -20,6 +20,7 @@ CLI arguments:
 - `--target` URL of any appliance serving the Ethereum 2.0 API.
 - `--timeout` Time after which to abandon waiting tests. Defaults to 10 minutes. Uses [Go duration syntax](https://golang.org/pkg/time/#ParseDuration).
 - `--subset` The subset of paths to run tests for. For example, set this to "/v1/node" to only run tests for routes in that path. Defaults to "/" (all paths).
+- `--failSilent` When true, return a 0 code even when tests fail. Defaults to false.
 
 ## Syntax of test cases
 

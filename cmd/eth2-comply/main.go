@@ -21,6 +21,7 @@ func main() {
 	target := flag.String("target", "NO TARGET PROVIDED", "A URL to run tests against, for example http://localhost:5051")
 	timeout := flag.String("timeout", "10m", "The time to wait for a case execution to complete. For example, 3600s, 60m, 1h")
 	subset := flag.String("subset", "/", "The subset of paths to run tests for. For example, set this to \"/v1/node\" to only run tests for routes in that path. Defaults to \"/\" (all paths).")
+	failSilent := flag.Bool("failSilent", false, "When true, return a 0 code even when tests fail. Defaults to false.")
 	flag.Parse()
 
 	// Setup OAPI client.
@@ -87,7 +88,7 @@ func main() {
 
 	// If any test was unsuccessful, exit with code 1.
 	for _, testCase := range testCases {
-		if !testCase.Result.Success {
+		if !testCase.Result.Success && !*failSilent {
 			os.Exit(1)
 		}
 	}
