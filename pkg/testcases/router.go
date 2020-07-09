@@ -55,6 +55,11 @@ func (c Case) execGetOperation(ctx context.Context, route string) (*oapi.Executo
 }
 
 func (c Case) execPostOperation(ctx context.Context, route string) (*oapi.ExecutorResult, error) {
+	switch {
+	case strings.Contains(route, "/beacon/"):
+		return c.execPostBeaconOperation(ctx, route)
+	}
+
 	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}
 }
 
@@ -83,6 +88,24 @@ func (c Case) execGetBeaconOperation(ctx context.Context, route string) (*oapi.E
 		return c.execGetBeaconPoolOperation(ctx, route)
 	case strings.Contains(route, "/states/"):
 		return c.execGetBeaconStatesOperation(ctx, route)
+	}
+
+	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}
+}
+
+func (c Case) execPostBeaconOperation(ctx context.Context, route string) (*oapi.ExecutorResult, error) {
+	switch {
+	case strings.Contains(route, "/pool/"):
+		return c.execPostBeaconPoolOperation(ctx, route)
+	}
+
+	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}
+}
+
+func (c Case) execPostBeaconPoolOperation(ctx context.Context, route string) (*oapi.ExecutorResult, error) {
+	switch {
+	case strings.Contains(route, "/voluntary_exits"):
+		return oapi.ExecPostBeaconPoolVoluntaryExits(ctx, c.OapiClient, c.Config.ReqBody)
 	}
 
 	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}
