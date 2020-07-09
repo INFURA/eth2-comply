@@ -3,6 +3,7 @@ package oapi
 
 import (
 	"context"
+	"encoding/json"
 	"net/url"
 
 	"github.com/INFURA/eth2-comply/pkg/eth2spec"
@@ -426,6 +427,29 @@ func ExecGetNodePeer(ctx context.Context, client *eth2spec.APIClient, peerId str
 	result := &ExecutorResult{
 		Response:   peer,
 		ResponseDS: eth2spec.InlineResponse20017{},
+		StatusCode: &httpdata.StatusCode,
+	}
+
+	return result, nil
+}
+
+func ExecPostBeaconPoolVoluntaryExits(ctx context.Context, client *eth2spec.APIClient, requestBody interface{}) (*ExecutorResult, error) {
+	data, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, err
+	}
+
+	voluntaryExit := &eth2spec.InlineObject3{}
+	err = json.Unmarshal(data, voluntaryExit)
+	if err != nil {
+		return nil, err
+	}
+
+	httpdata, err := client.BeaconApi.SubmitPoolVoluntaryExit(ctx, *voluntaryExit)
+
+	result := &ExecutorResult{
+		Response:   nil,
+		ResponseDS: nil,
 		StatusCode: &httpdata.StatusCode,
 	}
 
