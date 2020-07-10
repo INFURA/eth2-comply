@@ -15,8 +15,8 @@ import (
 
 func main() {
 	// Setup and parse CLI arguments.
-	testsRoot := flag.String("testsRoot", "NO TESTS DIR PROVIDED", "Path to a directory tree with test cases")
-	testsRemote := flag.String("testsRemote", "", "URL of a ZIP file containing a directory tree with test cases")
+	testsRoot := flag.String("testsRoot", "", "Path to a directory tree with test cases")
+	testsRemote := flag.String("testsRemote", "https://github.com/INFURA/eth2-comply/releases/download/v0.1.0/tests-v0.1.0.zip", "URL of a ZIP file containing a directory tree with test cases")
 	outDir := flag.String("outDir", "/tmp", "A directory where zip files will be downloaded and unzipped.")
 	target := flag.String("target", "NO TARGET PROVIDED", "A URL to run tests against, for example http://localhost:5051")
 	timeout := flag.String("timeout", "10m", "The time to wait for a case execution to complete. For example, 3600s, 60m, 1h")
