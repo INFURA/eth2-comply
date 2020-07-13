@@ -446,6 +446,9 @@ func ExecPostBeaconPoolVoluntaryExits(ctx context.Context, client *eth2spec.APIC
 	}
 
 	httpdata, err := client.BeaconApi.SubmitPoolVoluntaryExit(ctx, *voluntaryExit)
+	if err != nil {
+		return nil, err
+	}
 
 	result := &ExecutorResult{
 		Response:   nil,
