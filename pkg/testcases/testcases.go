@@ -113,8 +113,7 @@ func (c *Case) Exec(ctx context.Context, pathsRoot string) {
 	result, err := c.execOperation(ctx)
 	if err != nil {
 		// If the response is invalid in the OAPI schema, set that error here.
-		oapiErr, ok := err.(eth2spec.GenericOpenAPIError)
-		if ok {
+		if oapiErr, ok := err.(eth2spec.GenericOpenAPIError); ok {
 			if len(oapiErr.Body()) > 0 {
 				c.setFailure(OapiError{Err: oapiErr, ServerResponse: oapiErr.Body()})
 				return
@@ -171,6 +170,7 @@ func (c Case) PrintResults() {
 	} else {
 		fmt.Printf("✅\n")
 	}
+	fmt.Printf("=======\n")
 }
 
 // assertExpectations does expectations checking for the Case and returns an
@@ -239,18 +239,12 @@ func (c Case) compareActualAndExpectedJson(result *oapi.ExecutorResult) error {
 	return nil
 }
 
-type TargetNodeSyncingError struct{}
-
-func (e TargetNodeSyncingError) Error() string {
-	return "The target does not correctly implement /node/syncing, which is required by eth2-comply. SyncStatus values should be JSON strings, not numbers."
-}
-
 // awaitTargetIsHealthy blocks until the target server reports itself as being
 // ready.
 func (c Case) awaitTargetIsHealthy(ctx context.Context) error {
 	for {
 		if ctx.Err() != nil {
-			return BadTargetError{Route: "/node/health", Err: ctx.Err()}
+			return BadTargetError{Route: "/v1/node/health", Err: ctx.Err()}
 		}
 
 		httpdata, _ := c.OapiClient.NodeApi.GetHealth(ctx)
@@ -271,7 +265,7 @@ type BadTargetError struct {
 }
 
 func (e BadTargetError) Error() string {
-	return fmt.Sprintf("BadTargetError\n%s %s\n\nTarget never became healthy. Targets MUST implement /node/health AND /node/syncing correctly as pre-requisites for compatability with eth2-comply. These routes are used by eth2-comply's control flow to manage test runs. For information about the correct implementation of these routes, see https://ethereum.github.io/eth2.0-APIs/", e.Route, e.Err.Error())
+	return fmt.Sprintf("BadTargetError: %s.\n\nDoes target implement %s? For information about the correct implementation of this required route, see https://ethereum.github.io/eth2.0-APIs/.", e.Err.Error(), e.Route)
 }
 
 // awaitTargetHasSlot blocks until the target server has synchronized the slot needed
@@ -304,7 +298,7 @@ func (c Case) awaitTargetHasSlot(ctx context.Context) error {
 func (c Case) getHeadSlotAndSyncDistance(ctx context.Context) (int, int, error) {
 	result, _, err := c.OapiClient.NodeApi.GetSyncingStatus(ctx)
 	if err != nil {
-		return 0, 0, BadTargetError{Route: "/node/syncing", Err: err}
+		return 0, 0, BadTargetError{Route: "/v1/node/syncing", Err: err}
 	}
 
 	headSlot, err := strconv.ParseInt(result.Data.HeadSlot.(string), 10, 0)
