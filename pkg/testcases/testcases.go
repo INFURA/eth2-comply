@@ -94,19 +94,20 @@ func (c *Case) Exec(ctx context.Context, pathsRoot string) {
 		return
 	}
 
-	// If a test specifies an await slot, wait for the node to sync that slot.
-	// Otherwise, just wait for the node to be healthy. awaitTargetHasSlot
-	// uses awaitTargetIsHealthy internally.
-	var err error
-	switch {
-	case c.Config.AwaitSlot > 0:
-		err = c.awaitTargetHasSlot(ctx)
-	default:
-		err = c.awaitTargetIsHealthy(ctx)
-	}
+	// Otherwise, just wait for the node to be healthy.
+	err := c.awaitTargetIsHealthy(ctx)
 	if err != nil {
 		c.setFailure(err)
 		return
+	}
+
+	// If a test specifies an await slot, wait for the node to sync that slot.
+	if c.Config.AwaitSlot > 0 {
+		err = c.awaitTargetHasSlot(ctx)
+		if err != nil {
+			c.setFailure(err)
+			return
+		}
 	}
 
 	result, err := c.execOperation(ctx)
@@ -276,11 +277,6 @@ func (e BadTargetError) Error() string {
 // awaitTargetHasSlot blocks until the target server has synchronized the slot needed
 // for the test case.
 func (c Case) awaitTargetHasSlot(ctx context.Context) error {
-	err := c.awaitTargetIsHealthy(ctx)
-	if err != nil {
-		return err
-	}
-
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
