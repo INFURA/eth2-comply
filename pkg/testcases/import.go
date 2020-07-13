@@ -44,7 +44,7 @@ func All(opts *TestsCasesOpts) ([]*Case, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = Unzip(filePath, opts.OutDir)
+		err = unzip(filePath, opts.OutDir)
 		if err != nil {
 			return nil, err
 		}
@@ -137,8 +137,8 @@ func getConfigsFromDirTree(root string, configs []CaseConfig) ([]CaseConfig, err
 	return configs, nil
 }
 
-// Unzip unzips a zip file into the provided outDir
-func Unzip(zipFilePath, outDir string) error {
+// unzip unzips a zip file into the provided outDir
+func unzip(zipFilePath, outDir string) error {
 	zipFileReader, err := zip.OpenReader(zipFilePath)
 	if err != nil {
 		return err
