@@ -10,16 +10,31 @@ import (
 	"github.com/antihax/optional"
 )
 
-// NewClient returns an OAPI client which can conduct operations against the
-// provided target.
-func NewClient(target url.URL) *eth2spec.APIClient {
+type key int
+
+const clientKey key = 0
+
+// WithClient returns a context with an OAPI client (accessible using
+// GetClient) which can conduct operations against the provided target.
+func WithClient(ctx context.Context, target url.URL) context.Context {
 	cfg := eth2spec.NewConfiguration()
 
 	cfg.Host = target.Host
 
 	client := eth2spec.NewAPIClient(cfg)
 
-	return client
+	ctx = context.WithValue(ctx, clientKey, client)
+
+	return ctx
+}
+
+// GetClient returns an *eth2spec.APIClient from the provided context, if one
+// exists in the context.
+func GetClient(ctx context.Context) *eth2spec.APIClient {
+	if _, ok := ctx.Value(clientKey).(*eth2spec.APIClient); !ok {
+		return nil
+	}
+	return ctx.Value(clientKey).(*eth2spec.APIClient)
 }
 
 // ExecutorResult is the first element in the uniform tuple returned by all
@@ -40,7 +55,8 @@ type ExecutorResult struct {
 	StatusCode *int
 }
 
-func ExecGetBeaconGenesis(ctx context.Context, client *eth2spec.APIClient) (*ExecutorResult, error) {
+func ExecGetBeaconGenesis(ctx context.Context) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	genesis, httpdata, err := client.BeaconApi.GetGenesis(ctx)
 	if err != nil {
 		return nil, err
@@ -55,7 +71,8 @@ func ExecGetBeaconGenesis(ctx context.Context, client *eth2spec.APIClient) (*Exe
 	return result, nil
 }
 
-func ExecGetBeaconStatesFork(ctx context.Context, client *eth2spec.APIClient, stateId string) (*ExecutorResult, error) {
+func ExecGetBeaconStatesFork(ctx context.Context, stateId string) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	fork, httpdata, err := client.BeaconApi.GetStateFork(ctx, stateId)
 	if err != nil {
 		return nil, err
@@ -70,7 +87,8 @@ func ExecGetBeaconStatesFork(ctx context.Context, client *eth2spec.APIClient, st
 	return result, nil
 }
 
-func ExecGetBeaconStatesRoot(ctx context.Context, client *eth2spec.APIClient, stateId string) (*ExecutorResult, error) {
+func ExecGetBeaconStatesRoot(ctx context.Context, stateId string) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	root, httpdata, err := client.BeaconApi.GetStateRoot(ctx, stateId)
 	if err != nil {
 		return nil, err
@@ -85,7 +103,8 @@ func ExecGetBeaconStatesRoot(ctx context.Context, client *eth2spec.APIClient, st
 	return result, nil
 }
 
-func ExecGetBeaconStatesFinalityCheckpoints(ctx context.Context, client *eth2spec.APIClient, stateId string) (*ExecutorResult, error) {
+func ExecGetBeaconStatesFinalityCheckpoints(ctx context.Context, stateId string) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	finalityCheckpoint, httpdata, err := client.BeaconApi.GetStateFinalityCheckpoints(ctx, stateId)
 	if err != nil {
 		return nil, err
@@ -106,7 +125,7 @@ type ExecGetBeaconStatesCommitteesOpts struct {
 	QueryParams map[string]string
 }
 
-func ExecGetBeaconStatesCommittees(ctx context.Context, client *eth2spec.APIClient, opts *ExecGetBeaconStatesCommitteesOpts) (*ExecutorResult, error) {
+func ExecGetBeaconStatesCommittees(ctx context.Context, opts *ExecGetBeaconStatesCommitteesOpts) (*ExecutorResult, error) {
 
 	getEpochCommitteesOpts := &eth2spec.GetEpochCommitteesOpts{}
 
@@ -117,6 +136,7 @@ func ExecGetBeaconStatesCommittees(ctx context.Context, client *eth2spec.APIClie
 		getEpochCommitteesOpts.Slot = optional.NewInterface(opts.QueryParams["slot"])
 	}
 
+	client := GetClient(ctx)
 	committees, httpdata, err := client.BeaconApi.GetEpochCommittees(ctx, opts.StateId, opts.Epoch, getEpochCommitteesOpts)
 	if err != nil {
 		return nil, err
@@ -131,22 +151,18 @@ func ExecGetBeaconStatesCommittees(ctx context.Context, client *eth2spec.APIClie
 	return result, nil
 }
 
-type ExecGetBeaconStatesValidatorsOpts struct {
-	StateId     string
-	QueryParams map[string]string
-}
-
-func ExecGetBeaconStatesValidators(ctx context.Context, client *eth2spec.APIClient, opts *ExecGetBeaconStatesValidatorsOpts) (*ExecutorResult, error) {
+func ExecGetBeaconStatesValidators(ctx context.Context, stateId string, queryParams map[string]string) (*ExecutorResult, error) {
 	getStateValidatorsOpts := &eth2spec.GetStateValidatorsOpts{}
 
-	if len(opts.QueryParams["id"]) > 0 {
-		getStateValidatorsOpts.Id = optional.NewInterface(opts.QueryParams["id"])
+	if len(queryParams["id"]) > 0 {
+		getStateValidatorsOpts.Id = optional.NewInterface(queryParams["id"])
 	}
-	if len(opts.QueryParams["status"]) > 0 {
-		getStateValidatorsOpts.Status = optional.NewInterface(opts.QueryParams["status"])
+	if len(queryParams["status"]) > 0 {
+		getStateValidatorsOpts.Status = optional.NewInterface(queryParams["status"])
 	}
 
-	validators, httpdata, err := client.BeaconApi.GetStateValidators(ctx, opts.StateId, getStateValidatorsOpts)
+	client := GetClient(ctx)
+	validators, httpdata, err := client.BeaconApi.GetStateValidators(ctx, stateId, getStateValidatorsOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -160,13 +176,9 @@ func ExecGetBeaconStatesValidators(ctx context.Context, client *eth2spec.APIClie
 	return result, nil
 }
 
-type ExecGetBeaconStatesValidatorsWithValidatorIdOpts struct {
-	StateId     string
-	ValidatorId string
-}
-
-func ExecGetBeaconStatesValidator(ctx context.Context, client *eth2spec.APIClient, opts *ExecGetBeaconStatesValidatorsWithValidatorIdOpts) (*ExecutorResult, error) {
-	validator, httpdata, err := client.BeaconApi.GetStateValidator(ctx, opts.StateId, opts.ValidatorId)
+func ExecGetBeaconStatesValidator(ctx context.Context, stateId, validatorId string) (*ExecutorResult, error) {
+	client := GetClient(ctx)
+	validator, httpdata, err := client.BeaconApi.GetStateValidator(ctx, stateId, validatorId)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +192,7 @@ func ExecGetBeaconStatesValidator(ctx context.Context, client *eth2spec.APIClien
 	return result, nil
 }
 
-func ExecGetBeaconHeaders(ctx context.Context, client *eth2spec.APIClient, queryParams map[string]string) (*ExecutorResult, error) {
+func ExecGetBeaconHeaders(ctx context.Context, queryParams map[string]string) (*ExecutorResult, error) {
 	getBlockHeaderOpts := &eth2spec.GetBlockHeadersOpts{}
 
 	if len(queryParams["slot"]) > 0 {
@@ -190,6 +202,7 @@ func ExecGetBeaconHeaders(ctx context.Context, client *eth2spec.APIClient, query
 		getBlockHeaderOpts.ParentRoot = optional.NewInterface(queryParams["parent_root"])
 	}
 
+	client := GetClient(ctx)
 	headers, httpdata, err := client.BeaconApi.GetBlockHeaders(ctx, getBlockHeaderOpts)
 	if err != nil {
 		return nil, err
@@ -204,8 +217,8 @@ func ExecGetBeaconHeaders(ctx context.Context, client *eth2spec.APIClient, query
 	return result, nil
 }
 
-func ExecGetBeaconHeader(ctx context.Context, client *eth2spec.APIClient, blockId string) (*ExecutorResult, error) {
-
+func ExecGetBeaconHeader(ctx context.Context, blockId string) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	header, httpdata, err := client.BeaconApi.GetBlockHeader(ctx, blockId)
 	if err != nil {
 		return nil, err
@@ -220,7 +233,8 @@ func ExecGetBeaconHeader(ctx context.Context, client *eth2spec.APIClient, blockI
 	return result, nil
 }
 
-func ExecGetBeaconBlock(ctx context.Context, client *eth2spec.APIClient, blockId string) (*ExecutorResult, error) {
+func ExecGetBeaconBlock(ctx context.Context, blockId string) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	block, httpdata, err := client.BeaconApi.GetBlock(ctx, blockId)
 	if err != nil {
 		return nil, err
@@ -235,7 +249,8 @@ func ExecGetBeaconBlock(ctx context.Context, client *eth2spec.APIClient, blockId
 	return result, nil
 }
 
-func ExecGetBeaconBlockRoot(ctx context.Context, client *eth2spec.APIClient, blockId string) (*ExecutorResult, error) {
+func ExecGetBeaconBlockRoot(ctx context.Context, blockId string) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	blockRoot, httpdata, err := client.BeaconApi.GetBlockRoot(ctx, blockId)
 	if err != nil {
 		return nil, err
@@ -250,7 +265,8 @@ func ExecGetBeaconBlockRoot(ctx context.Context, client *eth2spec.APIClient, blo
 	return result, nil
 }
 
-func ExecGetBeaconBlockAttestations(ctx context.Context, client *eth2spec.APIClient, blockId string) (*ExecutorResult, error) {
+func ExecGetBeaconBlockAttestations(ctx context.Context, blockId string) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	blockAttestations, httpdata, err := client.BeaconApi.GetBlockAttestations(ctx, blockId)
 	if err != nil {
 		return nil, err
@@ -265,7 +281,7 @@ func ExecGetBeaconBlockAttestations(ctx context.Context, client *eth2spec.APICli
 	return result, nil
 }
 
-func ExecGetBeaconPoolAttestations(ctx context.Context, client *eth2spec.APIClient, queryParams map[string]string) (*ExecutorResult, error) {
+func ExecGetBeaconPoolAttestations(ctx context.Context, queryParams map[string]string) (*ExecutorResult, error) {
 	getPoolAttestationsOpts := &eth2spec.GetPoolAttestationsOpts{}
 
 	if len(queryParams["slot"]) > 0 {
@@ -275,6 +291,7 @@ func ExecGetBeaconPoolAttestations(ctx context.Context, client *eth2spec.APIClie
 		getPoolAttestationsOpts.CommitteeIndex = optional.NewString(queryParams["committee_index"])
 	}
 
+	client := GetClient(ctx)
 	poolAttestations, httpdata, err := client.BeaconApi.GetPoolAttestations(ctx, getPoolAttestationsOpts)
 	if err != nil {
 		return nil, err
@@ -289,8 +306,8 @@ func ExecGetBeaconPoolAttestations(ctx context.Context, client *eth2spec.APIClie
 	return result, nil
 }
 
-func ExecGetBeaconPoolAttesterSlashings(ctx context.Context, client *eth2spec.APIClient) (*ExecutorResult, error) {
-
+func ExecGetBeaconPoolAttesterSlashings(ctx context.Context) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	attesterSlashings, httpdata, err := client.BeaconApi.GetPoolAttesterSlashings(ctx)
 	if err != nil {
 		return nil, err
@@ -305,8 +322,8 @@ func ExecGetBeaconPoolAttesterSlashings(ctx context.Context, client *eth2spec.AP
 	return result, nil
 }
 
-func ExecGetBeaconPoolProposerSlashings(ctx context.Context, client *eth2spec.APIClient) (*ExecutorResult, error) {
-
+func ExecGetBeaconPoolProposerSlashings(ctx context.Context) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	proposerSlashings, httpdata, err := client.BeaconApi.GetPoolProposerSlashings(ctx)
 	if err != nil {
 		return nil, err
@@ -321,8 +338,8 @@ func ExecGetBeaconPoolProposerSlashings(ctx context.Context, client *eth2spec.AP
 	return result, nil
 }
 
-func ExecGetBeaconPoolVoluntaryExits(ctx context.Context, client *eth2spec.APIClient) (*ExecutorResult, error) {
-
+func ExecGetBeaconPoolVoluntaryExits(ctx context.Context) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	voluntaryExits, httpdata, err := client.BeaconApi.GetPoolVoluntaryExits(ctx)
 	if err != nil {
 		return nil, err
@@ -337,8 +354,8 @@ func ExecGetBeaconPoolVoluntaryExits(ctx context.Context, client *eth2spec.APICl
 	return result, nil
 }
 
-func ExecGetNodeHealth(ctx context.Context, client *eth2spec.APIClient) (*ExecutorResult, error) {
-
+func ExecGetNodeHealth(ctx context.Context) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	httpdata, err := client.NodeApi.GetHealth(ctx)
 	if err != nil {
 		return nil, err
@@ -353,8 +370,8 @@ func ExecGetNodeHealth(ctx context.Context, client *eth2spec.APIClient) (*Execut
 	return result, nil
 }
 
-func ExecGetNodeSyncing(ctx context.Context, client *eth2spec.APIClient) (*ExecutorResult, error) {
-
+func ExecGetNodeSyncing(ctx context.Context) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	syncing, httpdata, err := client.NodeApi.GetSyncingStatus(ctx)
 	if err != nil {
 		return nil, err
@@ -369,8 +386,8 @@ func ExecGetNodeSyncing(ctx context.Context, client *eth2spec.APIClient) (*Execu
 	return result, nil
 }
 
-func ExecGetNodeVersion(ctx context.Context, client *eth2spec.APIClient) (*ExecutorResult, error) {
-
+func ExecGetNodeVersion(ctx context.Context) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	version, httpdata, err := client.NodeApi.GetNodeVersion(ctx)
 	if err != nil {
 		return nil, err
@@ -385,8 +402,8 @@ func ExecGetNodeVersion(ctx context.Context, client *eth2spec.APIClient) (*Execu
 	return result, nil
 }
 
-func ExecGetNodeIdentity(ctx context.Context, client *eth2spec.APIClient) (*ExecutorResult, error) {
-
+func ExecGetNodeIdentity(ctx context.Context) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	identity, httpdata, err := client.NodeApi.GetNetworkIdentity(ctx)
 	if err != nil {
 		return nil, err
@@ -401,8 +418,8 @@ func ExecGetNodeIdentity(ctx context.Context, client *eth2spec.APIClient) (*Exec
 	return result, nil
 }
 
-func ExecGetNodePeers(ctx context.Context, client *eth2spec.APIClient) (*ExecutorResult, error) {
-
+func ExecGetNodePeers(ctx context.Context) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	peers, httpdata, err := client.NodeApi.GetPeers(ctx)
 	if err != nil {
 		return nil, err
@@ -417,8 +434,8 @@ func ExecGetNodePeers(ctx context.Context, client *eth2spec.APIClient) (*Executo
 	return result, nil
 }
 
-func ExecGetNodePeer(ctx context.Context, client *eth2spec.APIClient, peerId string) (*ExecutorResult, error) {
-
+func ExecGetNodePeer(ctx context.Context, peerId string) (*ExecutorResult, error) {
+	client := GetClient(ctx)
 	peer, httpdata, err := client.NodeApi.GetPeer(ctx, peerId)
 	if err != nil {
 		return nil, err
@@ -433,7 +450,7 @@ func ExecGetNodePeer(ctx context.Context, client *eth2spec.APIClient, peerId str
 	return result, nil
 }
 
-func ExecPostBeaconPoolVoluntaryExits(ctx context.Context, client *eth2spec.APIClient, requestBody interface{}) (*ExecutorResult, error) {
+func ExecPostBeaconPoolVoluntaryExits(ctx context.Context, requestBody interface{}) (*ExecutorResult, error) {
 	data, err := json.Marshal(requestBody)
 	if err != nil {
 		return nil, err
@@ -445,6 +462,7 @@ func ExecPostBeaconPoolVoluntaryExits(ctx context.Context, client *eth2spec.APIC
 		return nil, err
 	}
 
+	client := GetClient(ctx)
 	httpdata, err := client.BeaconApi.SubmitPoolVoluntaryExit(ctx, *voluntaryExit)
 	if err != nil {
 		return nil, err

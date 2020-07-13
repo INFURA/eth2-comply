@@ -10,8 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/INFURA/eth2-comply/pkg/eth2spec"
 )
 
 // TestsCasesOpts are used to configure statically defined test cases with
@@ -29,9 +27,6 @@ type TestsCasesOpts struct {
 	// testsRoot is a file path to a directory tree containing well-specified
 	// JSON tests cases.
 	TestsRoot string
-	// oapiClient is an instantiated Ethereum 2.0 OAPI client which will be
-	// used to conduct OAPI operations.
-	OapiClient *eth2spec.APIClient
 }
 
 // All returns an array of executable test cases for the directory tree
@@ -66,7 +61,7 @@ func All(opts *TestsCasesOpts) ([]*Case, error) {
 		if err != nil {
 			return nil, err
 		}
-		c := NewCase(config, opts.OapiClient)
+		c := NewCase(config)
 
 		cases = append(cases, c)
 

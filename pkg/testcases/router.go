@@ -68,21 +68,21 @@ func (c Case) execGetBeaconOperation(ctx context.Context, route string) (*oapi.E
 
 	switch {
 	case strings.Contains(route, "/genesis"):
-		return oapi.ExecGetBeaconGenesis(ctx, c.OapiClient)
+		return oapi.ExecGetBeaconGenesis(ctx)
 	case strings.Contains(route, "/headers/"):
 		blockId := uriTokens[4]
-		return oapi.ExecGetBeaconHeader(ctx, c.OapiClient, blockId)
+		return oapi.ExecGetBeaconHeader(ctx, blockId)
 	case strings.Contains(route, "/headers"):
-		return oapi.ExecGetBeaconHeaders(ctx, c.OapiClient, c.Config.QueryParams)
+		return oapi.ExecGetBeaconHeaders(ctx, c.Config.QueryParams)
 	case strings.Contains(route, "/blocks/"):
 		blockId := uriTokens[4]
 		switch {
 		case strings.Contains(route, "/root"):
-			return oapi.ExecGetBeaconBlockRoot(ctx, c.OapiClient, blockId)
+			return oapi.ExecGetBeaconBlockRoot(ctx, blockId)
 		case strings.Contains(route, "/attestations"):
-			return oapi.ExecGetBeaconBlockAttestations(ctx, c.OapiClient, blockId)
+			return oapi.ExecGetBeaconBlockAttestations(ctx, blockId)
 		default:
-			return oapi.ExecGetBeaconBlock(ctx, c.OapiClient, blockId)
+			return oapi.ExecGetBeaconBlock(ctx, blockId)
 		}
 	case strings.Contains(route, "/pool/"):
 		return c.execGetBeaconPoolOperation(ctx, route)
@@ -105,7 +105,7 @@ func (c Case) execPostBeaconOperation(ctx context.Context, route string) (*oapi.
 func (c Case) execPostBeaconPoolOperation(ctx context.Context, route string) (*oapi.ExecutorResult, error) {
 	switch {
 	case strings.Contains(route, "/voluntary_exits"):
-		return oapi.ExecPostBeaconPoolVoluntaryExits(ctx, c.OapiClient, c.Config.ReqBody)
+		return oapi.ExecPostBeaconPoolVoluntaryExits(ctx, c.Config.ReqBody)
 	}
 
 	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}
@@ -116,18 +116,18 @@ func (c Case) execGetNodeOperation(ctx context.Context, route string) (*oapi.Exe
 
 	switch {
 	case strings.Contains(route, "/health"):
-		return oapi.ExecGetNodeHealth(ctx, c.OapiClient)
+		return oapi.ExecGetNodeHealth(ctx)
 	case strings.Contains(route, "/syncing"):
-		return oapi.ExecGetNodeSyncing(ctx, c.OapiClient)
+		return oapi.ExecGetNodeSyncing(ctx)
 	case strings.Contains(route, "/version"):
-		return oapi.ExecGetNodeVersion(ctx, c.OapiClient)
+		return oapi.ExecGetNodeVersion(ctx)
 	case strings.Contains(route, "/peers/"):
 		peerId := uriTokens[len(uriTokens)-1]
-		return oapi.ExecGetNodePeer(ctx, c.OapiClient, peerId)
+		return oapi.ExecGetNodePeer(ctx, peerId)
 	case strings.Contains(route, "/peers"):
-		return oapi.ExecGetNodePeers(ctx, c.OapiClient)
+		return oapi.ExecGetNodePeers(ctx)
 	case strings.Contains(route, "/identity"):
-		return oapi.ExecGetNodeIdentity(ctx, c.OapiClient)
+		return oapi.ExecGetNodeIdentity(ctx)
 
 	}
 
@@ -137,13 +137,13 @@ func (c Case) execGetNodeOperation(ctx context.Context, route string) (*oapi.Exe
 func (c Case) execGetBeaconPoolOperation(ctx context.Context, route string) (*oapi.ExecutorResult, error) {
 	switch {
 	case strings.Contains(route, "/attestations"):
-		return oapi.ExecGetBeaconPoolAttestations(ctx, c.OapiClient, c.Config.QueryParams)
+		return oapi.ExecGetBeaconPoolAttestations(ctx, c.Config.QueryParams)
 	case strings.Contains(route, "/attester_slashings"):
-		return oapi.ExecGetBeaconPoolAttesterSlashings(ctx, c.OapiClient)
+		return oapi.ExecGetBeaconPoolAttesterSlashings(ctx)
 	case strings.Contains(route, "/proposer_slashings"):
-		return oapi.ExecGetBeaconPoolProposerSlashings(ctx, c.OapiClient)
+		return oapi.ExecGetBeaconPoolProposerSlashings(ctx)
 	case strings.Contains(route, "/voluntary_exits"):
-		return oapi.ExecGetBeaconPoolVoluntaryExits(ctx, c.OapiClient)
+		return oapi.ExecGetBeaconPoolVoluntaryExits(ctx)
 	}
 
 	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}
@@ -161,26 +161,18 @@ func (c Case) execGetBeaconStatesOperation(ctx context.Context, route string) (*
 			Epoch:       epoch,
 			QueryParams: c.Config.QueryParams,
 		}
-		return oapi.ExecGetBeaconStatesCommittees(ctx, c.OapiClient, opts)
+		return oapi.ExecGetBeaconStatesCommittees(ctx, opts)
 	case strings.Contains(route, "/finality_checkpoints"):
-		return oapi.ExecGetBeaconStatesFinalityCheckpoints(ctx, c.OapiClient, stateId)
+		return oapi.ExecGetBeaconStatesFinalityCheckpoints(ctx, stateId)
 	case strings.Contains(route, "/fork"):
-		return oapi.ExecGetBeaconStatesFork(ctx, c.OapiClient, stateId)
+		return oapi.ExecGetBeaconStatesFork(ctx, stateId)
 	case strings.Contains(route, "/root"):
-		return oapi.ExecGetBeaconStatesRoot(ctx, c.OapiClient, stateId)
+		return oapi.ExecGetBeaconStatesRoot(ctx, stateId)
 	case strings.Contains(route, "/validators/"):
 		validatorId := uriTokens[6]
-		opts := &oapi.ExecGetBeaconStatesValidatorsWithValidatorIdOpts{
-			StateId:     stateId,
-			ValidatorId: validatorId,
-		}
-		return oapi.ExecGetBeaconStatesValidator(ctx, c.OapiClient, opts)
+		return oapi.ExecGetBeaconStatesValidator(ctx, stateId, validatorId)
 	case strings.Contains(route, "/validators"):
-		opts := &oapi.ExecGetBeaconStatesValidatorsOpts{
-			StateId:     stateId,
-			QueryParams: c.Config.QueryParams,
-		}
-		return oapi.ExecGetBeaconStatesValidators(ctx, c.OapiClient, opts)
+		return oapi.ExecGetBeaconStatesValidators(ctx, stateId, c.Config.QueryParams)
 	}
 
 	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}

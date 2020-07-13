@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["target.go"],
+    importpath = "github.com/INFURA/eth2-comply/pkg/target",
+    visibility = ["//visibility:public"],
+    deps = ["//pkg/oapi:go_default_library"],
+)

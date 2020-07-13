@@ -12,5 +12,6 @@ go_library(
     deps = [
         "//pkg/eth2spec:go_default_library",
         "//pkg/oapi:go_default_library",
+        "//pkg/target:go_default_library",
     ],
 )

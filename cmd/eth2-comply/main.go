@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/INFURA/eth2-comply/pkg/oapi"
+	"github.com/INFURA/eth2-comply/pkg/target"
 	"github.com/INFURA/eth2-comply/pkg/testcases"
 )
 
@@ -18,38 +19,46 @@ func main() {
 	testsRoot := flag.String("testsRoot", "", "Path to a directory tree with test cases")
 	testsRemote := flag.String("testsRemote", "https://github.com/INFURA/eth2-comply/releases/download/v0.1.0/tests-v0.1.0.zip", "URL of a ZIP file containing a directory tree with test cases")
 	outDir := flag.String("outDir", "/tmp", "A directory where zip files will be downloaded and unzipped.")
-	target := flag.String("target", "NO TARGET PROVIDED", "A URL to run tests against, for example http://localhost:5051")
+	targetLoc := flag.String("target", "NO TARGET PROVIDED", "A URL to run tests against, for example http://localhost:5051")
 	timeout := flag.String("timeout", "10m", "The time to wait for a case execution to complete. For example, 3600s, 60m, 1h")
 	subset := flag.String("subset", "/", "The subset of paths to run tests for. For example, set this to \"/v1/node\" to only run tests for routes in that path. Defaults to \"/\" (all paths).")
 	failSilent := flag.Bool("failSilent", false, "When true, return a 0 code even when tests fail. Defaults to false.")
 	flag.Parse()
 
-	// Setup OAPI client.
-	targetUrl, err := url.Parse(*target)
-	if err != nil {
-		panic(err)
-	}
-	oapiClient := oapi.NewClient(*targetUrl)
-
-	// Get test cases.
-	opts := &testcases.TestsCasesOpts{
-		Target:      *target,
-		TestsRoot:   *testsRoot,
-		TestsRemote: *testsRemote,
-		OutDir:      *outDir,
-		OapiClient:  oapiClient,
-	}
-	testCases, err := testcases.All(opts)
-	if err != nil {
-		panic(err)
-	}
-
 	// Create test context with timeout.
 	timeoutDur, err := time.ParseDuration(*timeout)
 	if err != nil {
-		panic(err)
+		fmt.Printf("%s\n", err)
+		os.Exit(1)
 	}
 	ctx, cancelFunc := context.WithTimeout(context.Background(), timeoutDur)
+
+	// Setup OAPI client.
+	targetUrl, err := url.Parse(*targetLoc)
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		os.Exit(1)
+	}
+	ctx = oapi.WithClient(ctx, *targetUrl)
+
+	// Wait for target to become healthy
+	if err := target.IsHealthy(ctx); err != nil {
+		fmt.Printf("%s\n", err)
+		os.Exit(1)
+	}
+
+	// Get test cases.
+	opts := &testcases.TestsCasesOpts{
+		Target:      *targetLoc,
+		TestsRoot:   *testsRoot,
+		TestsRemote: *testsRemote,
+		OutDir:      *outDir,
+	}
+	testCases, err := testcases.All(opts)
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		os.Exit(1)
+	}
 
 	// Execute test cases.
 	for _, testCase := range testCases {
@@ -60,7 +69,8 @@ func main() {
 	go func(ctx context.Context, cancelFunc func()) {
 		deadline, ok := ctx.Deadline()
 		if !ok {
-			panic("Could not get deadline for background context. Is your timeout parameter specified properly?")
+			fmt.Printf("Could not get deadline for background context. Is timeout parameter specified properly?\n")
+			os.Exit(1)
 		}
 		for {
 			if time.Now().After(deadline) {
@@ -77,19 +87,20 @@ func main() {
 		return testCases[i].Config.AwaitSlot < testCases[j].Config.AwaitSlot
 	})
 
-	// Print test results as they come in.
+	// Print test results as they come in, and record whether any test failed.
+	hasFailures := false
 	for _, testCase := range testCases {
-		if testCase.Config.AwaitSlot > 0 {
-			fmt.Printf("Next test is awaiting slot %d\n", testCase.Config.AwaitSlot)
-		}
 		<-testCase.Done
-		testCase.PrintResults()
+
+		fmt.Printf("%s\n", testCase.ResultsPretty())
+
+		if !testCase.Result.Success {
+			hasFailures = true
+		}
 	}
 
 	// If any test was unsuccessful, exit with code 1.
-	for _, testCase := range testCases {
-		if !testCase.Result.Success && !*failSilent {
-			os.Exit(1)
-		}
+	if hasFailures && !*failSilent {
+		os.Exit(1)
 	}
 }

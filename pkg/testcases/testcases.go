@@ -8,24 +8,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"reflect"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/INFURA/eth2-comply/pkg/eth2spec"
 	"github.com/INFURA/eth2-comply/pkg/oapi"
+	"github.com/INFURA/eth2-comply/pkg/target"
 )
 
 // Case is an executable test case. The Config property can be accessed to get
 // information about the case scenario.
 type Case struct {
-	Config     CaseConfig
-	OapiClient *eth2spec.APIClient
-	Result     Result
-	Skipped    bool
-	Done       chan struct{}
+	Config  CaseConfig
+	Result  Result
+	Skipped bool
+	Done    chan struct{}
 }
 
 // CaseConfig describes a test scenario.
@@ -45,33 +42,24 @@ type Result struct {
 	Error   error
 }
 
-// NewCase instantiates and returns a Case struct.
-func NewCase(config CaseConfig, oapiClient *eth2spec.APIClient) *Case {
-	c := &Case{}
-
-	c.Config = config
-	c.OapiClient = oapiClient
-	c.Result = Result{}
-	c.Done = make(chan struct{})
-
-	return c
-}
-
 type OapiError struct {
 	Err            error
 	ServerResponse []byte
 }
 
 func (e OapiError) Error() string {
-	return fmt.Sprintf("  OpenAPI client error! A 404 error means the target does not implement the route. A json unmarshaling error means the target implements the route response incorrectly.\n\n  Error:\n    %s\n  Received server message:\n    %s", e.Err.Error(), string(e.ServerResponse))
+	return fmt.Sprintf("OpenAPI client error!\nError: %s\nServer message: %s", e.Err.Error(), string(e.ServerResponse))
 }
 
-type ExpectationsError struct {
-	Err error
-}
+// NewCase instantiates and returns a Case struct.
+func NewCase(config CaseConfig) *Case {
+	c := &Case{}
 
-func (e ExpectationsError) Error() string {
-	return fmt.Sprintf("  Response did not satisfy expectations!\n\n  Error:\n%s", e.Err.Error())
+	c.Config = config
+	c.Result = Result{}
+	c.Done = make(chan struct{})
+
+	return c
 }
 
 // Exec executes a test Case and populates the Case's Result struct. The Result
@@ -94,17 +82,9 @@ func (c *Case) Exec(ctx context.Context, pathsRoot string) {
 		return
 	}
 
-	// Otherwise, just wait for the node to be healthy.
-	err := c.awaitTargetIsHealthy(ctx)
-	if err != nil {
-		c.setFailure(err)
-		return
-	}
-
 	// If a test specifies an await slot, wait for the node to sync that slot.
 	if c.Config.AwaitSlot > 0 {
-		err = c.awaitTargetHasSlot(ctx)
-		if err != nil {
+		if err := target.HasSlot(ctx, c.Config.AwaitSlot); err != nil {
 			c.setFailure(err)
 			return
 		}
@@ -128,11 +108,37 @@ func (c *Case) Exec(ctx context.Context, pathsRoot string) {
 
 	err = c.assertExpectations(result)
 	if err != nil {
-		c.setFailure(ExpectationsError{Err: err})
+		c.setFailure(err)
 		return
 	}
 
 	c.Result.Success = true
+}
+
+// ResultsPretty returns human-readable test results output suitable for
+// printing to a CLI.
+func (c Case) ResultsPretty() string {
+	// Build up a route string with the query params appended to the end
+	routeString := fmt.Sprintf("%s %s", c.Config.Method, c.Config.Route)
+	if len(c.Config.QueryParams) > 0 {
+		routeString = fmt.Sprintf("%s%s", routeString, "?")
+		for i, x := range c.Config.QueryParams {
+			routeString = fmt.Sprintf("%s%s=%s&", routeString, i, x)
+		}
+		// Remove the trailing ampersand
+		routeString = routeString[:len(routeString)-1]
+	}
+
+	var resultString string
+	if c.Skipped {
+		resultString = fmt.Sprintf("%s skipped\n", routeString)
+	} else if !c.Result.Success {
+		resultString = fmt.Sprintf("%s ❌\n%s", routeString, c.Result.Error.Error())
+	} else {
+		resultString = fmt.Sprintf("%s ✅\n", routeString)
+	}
+
+	return resultString
 }
 
 // setFailure marks a test case as having failed and records a corresponding
@@ -140,37 +146,6 @@ func (c *Case) Exec(ctx context.Context, pathsRoot string) {
 func (c *Case) setFailure(err error) {
 	c.Result.Success = false
 	c.Result.Error = err
-}
-
-// PrintResults pretty-prints a test case and its result to stdout.
-func (c Case) PrintResults() {
-	route, err := url.Parse(c.Config.Route)
-	if err != nil {
-		// Panic on user-error
-		panicMsg := fmt.Sprintf("Could not parse url %s when printing test results", c.Config.Route)
-		panic(panicMsg)
-	}
-
-	routeString := fmt.Sprintf("%s %s", c.Config.Method, route.RequestURI())
-	if len(c.Config.QueryParams) > 0 {
-		routeString = fmt.Sprintf("%s%s", routeString, "?")
-		for i, x := range c.Config.QueryParams {
-			routeString = fmt.Sprintf("%s%s=%s,", routeString, i, x)
-		}
-		routeString = routeString[:len(routeString)-1]
-	}
-
-	fmt.Printf("%s ", routeString)
-
-	if c.Skipped {
-		fmt.Printf("Skipped\n")
-	} else if !c.Result.Success {
-		fmt.Printf("❌\n")
-		fmt.Println(c.Result.Error)
-	} else {
-		fmt.Printf("✅\n")
-	}
-	fmt.Printf("=======\n")
 }
 
 // assertExpectations does expectations checking for the Case and returns an
@@ -193,7 +168,8 @@ func (c Case) assertExpectations(result *oapi.ExecutorResult) error {
 				return fmt.Errorf("Expected response body:\n%s\n\nReceived response body:\n%s", expectedString, actualString)
 			}
 		} else {
-			// If the expected response body is JSON, do that comparison that here.
+			// If the expected response body is JSON, do that comparison that
+			// here.
 			err := c.compareActualAndExpectedJson(result)
 			if err != nil {
 				return err
@@ -237,78 +213,4 @@ func (c Case) compareActualAndExpectedJson(result *oapi.ExecutorResult) error {
 	}
 
 	return nil
-}
-
-// awaitTargetIsHealthy blocks until the target server reports itself as being
-// ready.
-func (c Case) awaitTargetIsHealthy(ctx context.Context) error {
-	for {
-		if ctx.Err() != nil {
-			return BadTargetError{Route: "/v1/node/health", Err: ctx.Err()}
-		}
-
-		httpdata, _ := c.OapiClient.NodeApi.GetHealth(ctx)
-		switch {
-		case httpdata != nil && (httpdata.StatusCode == 200 || httpdata.StatusCode == 206):
-			return nil
-		default:
-			time.Sleep(time.Second)
-			continue
-		}
-	}
-
-}
-
-type BadTargetError struct {
-	Route string
-	Err   error
-}
-
-func (e BadTargetError) Error() string {
-	return fmt.Sprintf("BadTargetError: %s.\n\nDoes target implement %s? For information about the correct implementation of this required route, see https://ethereum.github.io/eth2.0-APIs/.", e.Err.Error(), e.Route)
-}
-
-// awaitTargetHasSlot blocks until the target server has synchronized the slot needed
-// for the test case.
-func (c Case) awaitTargetHasSlot(ctx context.Context) error {
-	for {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-
-		headSlot, syncDistance, err := c.getHeadSlotAndSyncDistance(ctx)
-		if err != nil {
-			return err
-		}
-
-		currentSlot := headSlot - syncDistance
-
-		switch {
-		case currentSlot >= c.Config.AwaitSlot:
-			return nil
-		default:
-			time.Sleep(time.Second)
-			continue
-		}
-	}
-}
-
-// getHeadSlotAndSyncDistance is a convenience function that encapsulates some
-// logic for awaitTargetHasSlot.
-func (c Case) getHeadSlotAndSyncDistance(ctx context.Context) (int, int, error) {
-	result, _, err := c.OapiClient.NodeApi.GetSyncingStatus(ctx)
-	if err != nil {
-		return 0, 0, BadTargetError{Route: "/v1/node/syncing", Err: err}
-	}
-
-	headSlot, err := strconv.ParseInt(result.Data.HeadSlot.(string), 10, 0)
-	if err != nil {
-		return 0, 0, err
-	}
-	syncDistance, err := strconv.ParseInt(result.Data.SyncDistance.(string), 10, 0)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	return int(headSlot), int(syncDistance), nil
 }
