@@ -4,7 +4,7 @@ ETH2SPECROOT=beacon-node-oapi.yaml
 ETH2SPECBUNDLE=bundle.yaml
 ETH2PKGPATH=pkg/eth2spec
 
-build:
+build: lint
 	go build ./... \
 	  && bazel run //:gazelle
 
