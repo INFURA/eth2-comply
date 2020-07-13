@@ -44,7 +44,7 @@ func All(opts *TestsCasesOpts) ([]*Case, error) {
 	configs := []CaseConfig{}
 	cases := []*Case{}
 
-	if opts.TestsRemote != "" {
+	if opts.TestsRoot == "" {
 		filePath, err := getRemoteTestsFile(opts.TestsRemote, opts.OutDir)
 		if err != nil {
 			return nil, err
