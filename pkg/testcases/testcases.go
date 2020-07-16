@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/INFURA/eth2-comply/pkg/eth2spec"
@@ -160,56 +159,43 @@ func (c Case) assertExpectations(result *oapi.ExecutorResult) error {
 
 	// If the config has an expected response body, evaluate that.
 	if c.Config.ExpectedRespBody != nil {
-		// If the expected response is a simple string and not a JSON blob, do
-		// that comparison here.
-		if expectedString, ok := c.Config.ExpectedRespBody.(string); ok {
-			actualString := reflect.ValueOf(result.Response).String()
-			if strings.Compare(expectedString, actualString) != 0 {
-				return fmt.Errorf("Expected response body:\n%s\n\nReceived response body:\n%s", expectedString, actualString)
-			}
-		} else {
-			// If the expected response body is JSON, do that comparison that
-			// here.
-			err := c.compareActualAndExpectedJson(result)
-			if err != nil {
-				return err
-			}
+		// Get serialized JSON bytes for the expected response body, since Go
+		// only has an `interface{}` type for the user-specified response body.
+		data, err := json.Marshal(c.Config.ExpectedRespBody)
+		if err != nil {
+			return err
 		}
 
-	}
+		// Unmarshal the JSON bytes into the appropriate Go type, provided by
+		// the result.ResponseDS.
+		err = json.Unmarshal(data, &result.ResponseDS)
+		if err != nil {
+			return err
+		}
 
-	return nil
-}
+		// Re-serialize the expected response back out into JSON bytes. This
+		// time, the JSON bytes will be in a canonicalized form for their type.
+		// Users may specify object keys in any order, but marshaling JSON from
+		// a Go type will give you a canonical JSON encoding for that type.
+		canonicalizedExpected, err := json.Marshal(result.ResponseDS)
+		if err != nil {
+			return err
+		}
 
-// compareActualAndExpectedJson unmarshals the expected response body into the
-// appropriate Go type, only then to marshal it back out to JSON in a
-// canonicalized form. The received JSON is already stored in its canonical
-// data structure and is marshaled into canonicalized JSON bytes as well. The
-// bytes are compared. An error is returned if the canonicalizes byte slices
-// are not identical, or if there was an issue marshaling or unmarshaling any
-// data.
-func (c Case) compareActualAndExpectedJson(result *oapi.ExecutorResult) error {
-	data, err := json.Marshal(c.Config.ExpectedRespBody)
-	if err != nil {
-		return err
-	}
+		// Serialize the actual received response into JSON bytes. Because the
+		// result.Response is already a specific Go type (the same type as the
+		// result.ResponseDS), serializing should produce a canonical form
+		// identical to the canonical form of the expected response.
+		canonicalizedActual, err := json.Marshal(result.Response)
+		if err != nil {
+			return err
+		}
 
-	err = json.Unmarshal(data, &result.ResponseDS)
-	if err != nil {
-		return err
-	}
-	canonicalizedExpected, err := json.Marshal(result.ResponseDS)
-	if err != nil {
-		return err
-	}
-
-	canonicalizedActual, err := json.Marshal(result.Response)
-	if err != nil {
-		return err
-	}
-
-	if !bytes.Equal(canonicalizedExpected, canonicalizedActual) {
-		return fmt.Errorf("Expected response body:\n%s\n\nReceived response body:\n%s", canonicalizedExpected, canonicalizedActual)
+		// Because the serialized JSON bytes are canonicalized, we can just do
+		// a bytes comparison to check equality.
+		if !bytes.Equal(canonicalizedExpected, canonicalizedActual) {
+			return fmt.Errorf("Expected response body:\n%s\n\nReceived response body:\n%s", canonicalizedExpected, canonicalizedActual)
+		}
 	}
 
 	return nil
