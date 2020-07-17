@@ -9,7 +9,7 @@ Check the [release page](https://github.com/INFURA/eth2-comply/releases) for the
 ## Usage
 
 ```
-eth2-comply --target http://localhost:5051 --testsRemote https://github.com/INFURA/eth2-comply/releases/download/v0.1.1/tests-v0.1.1.zip
+eth2-comply --target http://localhost:5051
 ```
 
 CLI arguments:
