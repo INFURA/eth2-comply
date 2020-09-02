@@ -3,7 +3,6 @@ package oapi
 
 import (
 	"context"
-	"encoding/json"
 	"net/url"
 
 	"github.com/INFURA/eth2-comply/pkg/eth2spec"
@@ -64,7 +63,7 @@ func ExecGetBeaconGenesis(ctx context.Context) (*ExecutorResult, error) {
 
 	result := &ExecutorResult{
 		Response:   genesis,
-		ResponseDS: eth2spec.InlineResponse200{},
+		ResponseDS: eth2spec.GetGenesisResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -80,7 +79,7 @@ func ExecGetBeaconStatesFork(ctx context.Context, stateId string) (*ExecutorResu
 
 	result := &ExecutorResult{
 		Response:   fork,
-		ResponseDS: eth2spec.InlineResponse2002{},
+		ResponseDS: eth2spec.GetStateForkResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -96,7 +95,7 @@ func ExecGetBeaconStatesRoot(ctx context.Context, stateId string) (*ExecutorResu
 
 	result := &ExecutorResult{
 		Response:   root,
-		ResponseDS: eth2spec.InlineResponse2001{},
+		ResponseDS: eth2spec.GetStateRootResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -112,7 +111,7 @@ func ExecGetBeaconStatesFinalityCheckpoints(ctx context.Context, stateId string)
 
 	result := &ExecutorResult{
 		Response:   finalityCheckpoint,
-		ResponseDS: eth2spec.InlineResponse2003{},
+		ResponseDS: eth2spec.GetStateFinalityCheckpointsResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -144,7 +143,7 @@ func ExecGetBeaconStatesCommittees(ctx context.Context, opts *ExecGetBeaconState
 
 	result := &ExecutorResult{
 		Response:   committees,
-		ResponseDS: eth2spec.InlineResponse2006{},
+		ResponseDS: eth2spec.GetEpochCommitteesResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -169,7 +168,7 @@ func ExecGetBeaconStatesValidators(ctx context.Context, stateId string, queryPar
 
 	result := &ExecutorResult{
 		Response:   validators,
-		ResponseDS: eth2spec.InlineResponse2004{},
+		ResponseDS: eth2spec.GetStateValidatorsResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -185,7 +184,7 @@ func ExecGetBeaconStatesValidator(ctx context.Context, stateId, validatorId stri
 
 	result := &ExecutorResult{
 		Response:   validator,
-		ResponseDS: eth2spec.InlineResponse2005{},
+		ResponseDS: eth2spec.GetStateValidatorResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -210,7 +209,7 @@ func ExecGetBeaconHeaders(ctx context.Context, queryParams map[string]string) (*
 
 	result := &ExecutorResult{
 		Response:   headers,
-		ResponseDS: eth2spec.InlineResponse2007{},
+		ResponseDS: eth2spec.GetBlockHeadersResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -226,7 +225,7 @@ func ExecGetBeaconHeader(ctx context.Context, blockId string) (*ExecutorResult, 
 
 	result := &ExecutorResult{
 		Response:   header,
-		ResponseDS: eth2spec.InlineResponse2008{},
+		ResponseDS: eth2spec.GetBlockHeaderResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -242,7 +241,7 @@ func ExecGetBeaconBlock(ctx context.Context, blockId string) (*ExecutorResult, e
 
 	result := &ExecutorResult{
 		Response:   block,
-		ResponseDS: eth2spec.InlineResponse2009{},
+		ResponseDS: eth2spec.GetBlockResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -258,7 +257,7 @@ func ExecGetBeaconBlockRoot(ctx context.Context, blockId string) (*ExecutorResul
 
 	result := &ExecutorResult{
 		Response:   blockRoot,
-		ResponseDS: eth2spec.InlineResponse20010{},
+		ResponseDS: eth2spec.GetBlockRootResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -274,80 +273,7 @@ func ExecGetBeaconBlockAttestations(ctx context.Context, blockId string) (*Execu
 
 	result := &ExecutorResult{
 		Response:   blockAttestations,
-		ResponseDS: eth2spec.InlineResponse20011{},
-		StatusCode: &httpdata.StatusCode,
-	}
-
-	return result, nil
-}
-
-func ExecGetBeaconPoolAttestations(ctx context.Context, queryParams map[string]string) (*ExecutorResult, error) {
-	getPoolAttestationsOpts := &eth2spec.GetPoolAttestationsOpts{}
-
-	if len(queryParams["slot"]) > 0 {
-		getPoolAttestationsOpts.Slot = optional.NewString(queryParams["slot"])
-	}
-	if len(queryParams["committee_index"]) > 0 {
-		getPoolAttestationsOpts.CommitteeIndex = optional.NewString(queryParams["committee_index"])
-	}
-
-	client := GetClient(ctx)
-	poolAttestations, httpdata, err := client.BeaconApi.GetPoolAttestations(ctx, getPoolAttestationsOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	result := &ExecutorResult{
-		Response:   poolAttestations,
-		ResponseDS: eth2spec.InlineResponse20011{},
-		StatusCode: &httpdata.StatusCode,
-	}
-
-	return result, nil
-}
-
-func ExecGetBeaconPoolAttesterSlashings(ctx context.Context) (*ExecutorResult, error) {
-	client := GetClient(ctx)
-	attesterSlashings, httpdata, err := client.BeaconApi.GetPoolAttesterSlashings(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	result := &ExecutorResult{
-		Response:   attesterSlashings,
-		ResponseDS: eth2spec.InlineResponse20012{},
-		StatusCode: &httpdata.StatusCode,
-	}
-
-	return result, nil
-}
-
-func ExecGetBeaconPoolProposerSlashings(ctx context.Context) (*ExecutorResult, error) {
-	client := GetClient(ctx)
-	proposerSlashings, httpdata, err := client.BeaconApi.GetPoolProposerSlashings(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	result := &ExecutorResult{
-		Response:   proposerSlashings,
-		ResponseDS: eth2spec.InlineResponse20013{},
-		StatusCode: &httpdata.StatusCode,
-	}
-
-	return result, nil
-}
-
-func ExecGetBeaconPoolVoluntaryExits(ctx context.Context) (*ExecutorResult, error) {
-	client := GetClient(ctx)
-	voluntaryExits, httpdata, err := client.BeaconApi.GetPoolVoluntaryExits(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	result := &ExecutorResult{
-		Response:   voluntaryExits,
-		ResponseDS: eth2spec.InlineResponse20014{},
+		ResponseDS: eth2spec.GetBlockAttestationsResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -379,7 +305,7 @@ func ExecGetNodeSyncing(ctx context.Context) (*ExecutorResult, error) {
 
 	result := &ExecutorResult{
 		Response:   syncing,
-		ResponseDS: eth2spec.InlineResponse20019{},
+		ResponseDS: eth2spec.GetSyncingStatusResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -395,7 +321,7 @@ func ExecGetNodeVersion(ctx context.Context) (*ExecutorResult, error) {
 
 	result := &ExecutorResult{
 		Response:   version,
-		ResponseDS: eth2spec.InlineResponse20018{},
+		ResponseDS: eth2spec.GetVersionResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -411,7 +337,7 @@ func ExecGetNodeIdentity(ctx context.Context) (*ExecutorResult, error) {
 
 	result := &ExecutorResult{
 		Response:   identity,
-		ResponseDS: eth2spec.InlineResponse20015{},
+		ResponseDS: eth2spec.GetNetworkIdentityResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -427,7 +353,7 @@ func ExecGetNodePeers(ctx context.Context) (*ExecutorResult, error) {
 
 	result := &ExecutorResult{
 		Response:   peers,
-		ResponseDS: eth2spec.InlineResponse20016{},
+		ResponseDS: eth2spec.GetPeersResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 
@@ -443,34 +369,7 @@ func ExecGetNodePeer(ctx context.Context, peerId string) (*ExecutorResult, error
 
 	result := &ExecutorResult{
 		Response:   peer,
-		ResponseDS: eth2spec.InlineResponse20017{},
-		StatusCode: &httpdata.StatusCode,
-	}
-
-	return result, nil
-}
-
-func ExecPostBeaconPoolVoluntaryExits(ctx context.Context, requestBody interface{}) (*ExecutorResult, error) {
-	data, err := json.Marshal(requestBody)
-	if err != nil {
-		return nil, err
-	}
-
-	voluntaryExit := &eth2spec.InlineObject3{}
-	err = json.Unmarshal(data, voluntaryExit)
-	if err != nil {
-		return nil, err
-	}
-
-	client := GetClient(ctx)
-	httpdata, err := client.BeaconApi.SubmitPoolVoluntaryExit(ctx, *voluntaryExit)
-	if err != nil {
-		return nil, err
-	}
-
-	result := &ExecutorResult{
-		Response:   nil,
-		ResponseDS: nil,
+		ResponseDS: eth2spec.GetPeerResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 

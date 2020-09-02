@@ -4,32 +4,25 @@ All URIs are relative to *http://public-mainnet-node.ethereum.org/api*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**GetBlock**](BeaconApi.md#GetBlock) | **Get** /v1/beacon/blocks/{block_id} | Get block
-[**GetBlockAttestations**](BeaconApi.md#GetBlockAttestations) | **Get** /v1/beacon/blocks/{block_id}/attestations | Get block attestations
-[**GetBlockHeader**](BeaconApi.md#GetBlockHeader) | **Get** /v1/beacon/headers/{block_id} | Get block header
-[**GetBlockHeaders**](BeaconApi.md#GetBlockHeaders) | **Get** /v1/beacon/headers | Get block headers
-[**GetBlockRoot**](BeaconApi.md#GetBlockRoot) | **Get** /v1/beacon/blocks/{block_id}/root | Get block root
-[**GetEpochCommittees**](BeaconApi.md#GetEpochCommittees) | **Get** /v1/beacon/states/{state_id}/committees/{epoch} | Get all committees for epoch
-[**GetGenesis**](BeaconApi.md#GetGenesis) | **Get** /v1/beacon/genesis | Retrieve details of the chain&#39;s genesis.
-[**GetPoolAttestations**](BeaconApi.md#GetPoolAttestations) | **Get** /v1/beacon/pool/attestations | Get Attestations from operations pool
-[**GetPoolAttesterSlashings**](BeaconApi.md#GetPoolAttesterSlashings) | **Get** /v1/beacon/pool/atttester_slashings | Get AttesterSlashings from operations pool
-[**GetPoolProposerSlashings**](BeaconApi.md#GetPoolProposerSlashings) | **Get** /v1/beacon/pool/proposer_slashings | Get ProposerSlashings from operations pool
-[**GetPoolVoluntaryExits**](BeaconApi.md#GetPoolVoluntaryExits) | **Get** /v1/beacon/pool/voluntary_exits | Get SignedVoluntaryExit from operations pool
-[**GetStateFinalityCheckpoints**](BeaconApi.md#GetStateFinalityCheckpoints) | **Get** /v1/beacon/states/{state_id}/finality_checkpoints | Get state finality checkpoints
-[**GetStateFork**](BeaconApi.md#GetStateFork) | **Get** /v1/beacon/states/{state_id}/fork | Get Fork object for requested state
-[**GetStateRoot**](BeaconApi.md#GetStateRoot) | **Get** /v1/beacon/states/{state_id}/root | Get state SSZ HashTreeRoot
-[**GetStateValidator**](BeaconApi.md#GetStateValidator) | **Get** /v1/beacon/states/{state_id}/validators/{validator_id} | Get validator from state by id
-[**GetStateValidators**](BeaconApi.md#GetStateValidators) | **Get** /v1/beacon/states/{state_id}/validators | Get validators from state
-[**SubmitPoolAttestations**](BeaconApi.md#SubmitPoolAttestations) | **Post** /v1/beacon/pool/attestations | Submit Attestation object to node
-[**SubmitPoolAttesterSlashings**](BeaconApi.md#SubmitPoolAttesterSlashings) | **Post** /v1/beacon/pool/atttester_slashings | Submit AttesterSlashing object to node&#39;s pool
-[**SubmitPoolProposerSlashings**](BeaconApi.md#SubmitPoolProposerSlashings) | **Post** /v1/beacon/pool/proposer_slashings | Submit ProposerSlashing object to node&#39;s pool
-[**SubmitPoolVoluntaryExit**](BeaconApi.md#SubmitPoolVoluntaryExit) | **Post** /v1/beacon/pool/voluntary_exits | Submit SignedVoluntaryExit object to node&#39;s pool
+[**GetBlock**](BeaconApi.md#GetBlock) | **Get** /eth/v1/beacon/blocks/{block_id} | Get block
+[**GetBlockAttestations**](BeaconApi.md#GetBlockAttestations) | **Get** /eth/v1/beacon/blocks/{block_id}/attestations | Get block attestations
+[**GetBlockHeader**](BeaconApi.md#GetBlockHeader) | **Get** /eth/v1/beacon/headers/{block_id} | Get block header
+[**GetBlockHeaders**](BeaconApi.md#GetBlockHeaders) | **Get** /eth/v1/beacon/headers | Get block headers
+[**GetBlockRoot**](BeaconApi.md#GetBlockRoot) | **Get** /eth/v1/beacon/blocks/{block_id}/root | Get block root
+[**GetEpochCommittees**](BeaconApi.md#GetEpochCommittees) | **Get** /eth/v1/beacon/states/{state_id}/committees/{epoch} | Get all committees for epoch
+[**GetGenesis**](BeaconApi.md#GetGenesis) | **Get** /eth/v1/beacon/genesis | Retrieve details of the chain&#39;s genesis.
+[**GetStateFinalityCheckpoints**](BeaconApi.md#GetStateFinalityCheckpoints) | **Get** /eth/v1/beacon/states/{state_id}/finality_checkpoints | Get state finality checkpoints
+[**GetStateFork**](BeaconApi.md#GetStateFork) | **Get** /eth/v1/beacon/states/{state_id}/fork | Get Fork object for requested state
+[**GetStateRoot**](BeaconApi.md#GetStateRoot) | **Get** /eth/v1/beacon/states/{state_id}/root | Get state SSZ HashTreeRoot
+[**GetStateValidator**](BeaconApi.md#GetStateValidator) | **Get** /eth/v1/beacon/states/{state_id}/validators/{validator_id} | Get validator from state by id
+[**GetStateValidators**](BeaconApi.md#GetStateValidators) | **Get** /eth/v1/beacon/states/{state_id}/validators | Get validators from state
+[**PublishBlock**](BeaconApi.md#PublishBlock) | **Post** /eth/v1/beacon/blocks | Publish a signed block.
 
 
 
 ## GetBlock
 
-> InlineResponse2009 GetBlock(ctx, blockId)
+> GetBlockResponse GetBlock(ctx, blockId)
 
 Get block
 
@@ -45,7 +38,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse2009**](inline_response_200_9.md)
+[**GetBlockResponse**](GetBlockResponse.md)
 
 ### Authorization
 
@@ -63,7 +56,7 @@ No authorization required
 
 ## GetBlockAttestations
 
-> InlineResponse20011 GetBlockAttestations(ctx, blockId)
+> GetBlockAttestationsResponse GetBlockAttestations(ctx, blockId)
 
 Get block attestations
 
@@ -79,7 +72,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse20011**](inline_response_200_11.md)
+[**GetBlockAttestationsResponse**](GetBlockAttestationsResponse.md)
 
 ### Authorization
 
@@ -97,7 +90,7 @@ No authorization required
 
 ## GetBlockHeader
 
-> InlineResponse2008 GetBlockHeader(ctx, blockId)
+> GetBlockHeaderResponse GetBlockHeader(ctx, blockId)
 
 Get block header
 
@@ -113,7 +106,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse2008**](inline_response_200_8.md)
+[**GetBlockHeaderResponse**](GetBlockHeaderResponse.md)
 
 ### Authorization
 
@@ -131,7 +124,7 @@ No authorization required
 
 ## GetBlockHeaders
 
-> InlineResponse2007 GetBlockHeaders(ctx, optional)
+> GetBlockHeadersResponse GetBlockHeaders(ctx, optional)
 
 Get block headers
 
@@ -157,7 +150,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse2007**](inline_response_200_7.md)
+[**GetBlockHeadersResponse**](GetBlockHeadersResponse.md)
 
 ### Authorization
 
@@ -175,7 +168,7 @@ No authorization required
 
 ## GetBlockRoot
 
-> InlineResponse20010 GetBlockRoot(ctx, blockId)
+> GetBlockRootResponse GetBlockRoot(ctx, blockId)
 
 Get block root
 
@@ -191,7 +184,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse20010**](inline_response_200_10.md)
+[**GetBlockRootResponse**](GetBlockRootResponse.md)
 
 ### Authorization
 
@@ -209,7 +202,7 @@ No authorization required
 
 ## GetEpochCommittees
 
-> InlineResponse2006 GetEpochCommittees(ctx, stateId, epoch, optional)
+> GetEpochCommitteesResponse GetEpochCommittees(ctx, stateId, epoch, optional)
 
 Get all committees for epoch
 
@@ -239,7 +232,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse2006**](inline_response_200_6.md)
+[**GetEpochCommitteesResponse**](GetEpochCommitteesResponse.md)
 
 ### Authorization
 
@@ -257,7 +250,7 @@ No authorization required
 
 ## GetGenesis
 
-> InlineResponse200 GetGenesis(ctx, )
+> GetGenesisResponse GetGenesis(ctx, )
 
 Retrieve details of the chain's genesis.
 
@@ -269,141 +262,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**InlineResponse200**](inline_response_200.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
-[[Back to Model list]](../README.md#documentation-for-models)
-[[Back to README]](../README.md)
-
-
-## GetPoolAttestations
-
-> InlineResponse20011 GetPoolAttestations(ctx, optional)
-
-Get Attestations from operations pool
-
-Retrieves attestations known by the node but not necessarily incorporated into any block
-
-### Required Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
- **optional** | ***GetPoolAttestationsOpts** | optional parameters | nil if no parameters
-
-### Optional Parameters
-
-Optional parameters are passed through a pointer to a GetPoolAttestationsOpts struct
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **slot** | **optional.String**|  | 
- **committeeIndex** | **optional.String**|  | 
-
-### Return type
-
-[**InlineResponse20011**](inline_response_200_11.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
-[[Back to Model list]](../README.md#documentation-for-models)
-[[Back to README]](../README.md)
-
-
-## GetPoolAttesterSlashings
-
-> InlineResponse20012 GetPoolAttesterSlashings(ctx, )
-
-Get AttesterSlashings from operations pool
-
-Retrieves attester slashings known by the node but not necessarily incorporated into any block
-
-### Required Parameters
-
-This endpoint does not need any parameter.
-
-### Return type
-
-[**InlineResponse20012**](inline_response_200_12.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
-[[Back to Model list]](../README.md#documentation-for-models)
-[[Back to README]](../README.md)
-
-
-## GetPoolProposerSlashings
-
-> InlineResponse20013 GetPoolProposerSlashings(ctx, )
-
-Get ProposerSlashings from operations pool
-
-Retrieves proposer slashings known by the node but not necessarily incorporated into any block
-
-### Required Parameters
-
-This endpoint does not need any parameter.
-
-### Return type
-
-[**InlineResponse20013**](inline_response_200_13.md)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: Not defined
-- **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
-[[Back to Model list]](../README.md#documentation-for-models)
-[[Back to README]](../README.md)
-
-
-## GetPoolVoluntaryExits
-
-> InlineResponse20014 GetPoolVoluntaryExits(ctx, )
-
-Get SignedVoluntaryExit from operations pool
-
-Retrieves voluntary exits known by the node but not necessarily incorporated into any block
-
-### Required Parameters
-
-This endpoint does not need any parameter.
-
-### Return type
-
-[**InlineResponse20014**](inline_response_200_14.md)
+[**GetGenesisResponse**](GetGenesisResponse.md)
 
 ### Authorization
 
@@ -421,7 +280,7 @@ No authorization required
 
 ## GetStateFinalityCheckpoints
 
-> InlineResponse2003 GetStateFinalityCheckpoints(ctx, stateId)
+> GetStateFinalityCheckpointsResponse GetStateFinalityCheckpoints(ctx, stateId)
 
 Get state finality checkpoints
 
@@ -437,7 +296,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse2003**](inline_response_200_3.md)
+[**GetStateFinalityCheckpointsResponse**](GetStateFinalityCheckpointsResponse.md)
 
 ### Authorization
 
@@ -455,7 +314,7 @@ No authorization required
 
 ## GetStateFork
 
-> InlineResponse2002 GetStateFork(ctx, stateId)
+> GetStateForkResponse GetStateFork(ctx, stateId)
 
 Get Fork object for requested state
 
@@ -471,7 +330,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse2002**](inline_response_200_2.md)
+[**GetStateForkResponse**](GetStateForkResponse.md)
 
 ### Authorization
 
@@ -489,7 +348,7 @@ No authorization required
 
 ## GetStateRoot
 
-> InlineResponse2001 GetStateRoot(ctx, stateId)
+> GetStateRootResponse GetStateRoot(ctx, stateId)
 
 Get state SSZ HashTreeRoot
 
@@ -505,7 +364,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse2001**](inline_response_200_1.md)
+[**GetStateRootResponse**](GetStateRootResponse.md)
 
 ### Authorization
 
@@ -523,7 +382,7 @@ No authorization required
 
 ## GetStateValidator
 
-> InlineResponse2005 GetStateValidator(ctx, stateId, validatorId)
+> GetStateValidatorResponse GetStateValidator(ctx, stateId, validatorId)
 
 Get validator from state by id
 
@@ -540,7 +399,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse2005**](inline_response_200_5.md)
+[**GetStateValidatorResponse**](GetStateValidatorResponse.md)
 
 ### Authorization
 
@@ -558,7 +417,7 @@ No authorization required
 
 ## GetStateValidators
 
-> InlineResponse2004 GetStateValidators(ctx, stateId, optional)
+> GetStateValidatorsResponse GetStateValidators(ctx, stateId, optional)
 
 Get validators from state
 
@@ -586,7 +445,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse2004**](inline_response_200_4.md)
+[**GetStateValidatorsResponse**](GetStateValidatorsResponse.md)
 
 ### Authorization
 
@@ -602,13 +461,13 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## SubmitPoolAttestations
+## PublishBlock
 
-> SubmitPoolAttestations(ctx, inlineObject)
+> PublishBlock(ctx, inlineObject)
 
-Submit Attestation object to node
+Publish a signed block.
 
-Submits Attestation object to node. If attestation passes all validation constraints, node MUST publish attestation on appropriate subnet.
+Instructs the beacon node to broadcast a newly signed beacon block to the beacon network, to be included in the beacon chain. The beacon node is not required to validate the signed `BeaconBlock`, and a successful response (20X) only indicates that the broadcast has been successful. The beacon node is expected to integrate the new block into its state, and therefore validate the block internally, however blocks which fail the validation are still broadcast but a different status code is returned (202)
 
 ### Required Parameters
 
@@ -629,109 +488,7 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: application/json
-- **Accept**: Not defined
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
-[[Back to Model list]](../README.md#documentation-for-models)
-[[Back to README]](../README.md)
-
-
-## SubmitPoolAttesterSlashings
-
-> SubmitPoolAttesterSlashings(ctx, inlineObject1)
-
-Submit AttesterSlashing object to node's pool
-
-Submits AttesterSlashing object to node's pool and if passes validation node MUST broadcast it to network.
-
-### Required Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**inlineObject1** | [**InlineObject1**](InlineObject1.md)|  | 
-
-### Return type
-
- (empty response body)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: application/json
-- **Accept**: Not defined
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
-[[Back to Model list]](../README.md#documentation-for-models)
-[[Back to README]](../README.md)
-
-
-## SubmitPoolProposerSlashings
-
-> SubmitPoolProposerSlashings(ctx, inlineObject2)
-
-Submit ProposerSlashing object to node's pool
-
-Submits ProposerSlashing object to node's pool and if passes validation  node MUST broadcast it to network.
-
-### Required Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**inlineObject2** | [**InlineObject2**](InlineObject2.md)|  | 
-
-### Return type
-
- (empty response body)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: application/json
-- **Accept**: Not defined
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
-[[Back to Model list]](../README.md#documentation-for-models)
-[[Back to README]](../README.md)
-
-
-## SubmitPoolVoluntaryExit
-
-> SubmitPoolVoluntaryExit(ctx, inlineObject3)
-
-Submit SignedVoluntaryExit object to node's pool
-
-Submits SignedVoluntaryExit object to node's pool and if passes validation node MUST broadcast it to network.
-
-### Required Parameters
-
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
-**ctx** | **context.Context** | context for authentication, logging, cancellation, deadlines, tracing, etc.
-**inlineObject3** | [**InlineObject3**](InlineObject3.md)|  | 
-
-### Return type
-
- (empty response body)
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
-- **Content-Type**: application/json
-- **Accept**: Not defined
+- **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)

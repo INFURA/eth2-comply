@@ -4,12 +4,12 @@ All URIs are relative to *http://public-mainnet-node.ethereum.org/api*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**GetHealth**](NodeApi.md#GetHealth) | **Get** /v1/node/health | Get health check
-[**GetNetworkIdentity**](NodeApi.md#GetNetworkIdentity) | **Get** /v1/node/identity | Get node network identity
-[**GetNodeVersion**](NodeApi.md#GetNodeVersion) | **Get** /v1/node/version | Get version string of the running beacon node.
-[**GetPeer**](NodeApi.md#GetPeer) | **Get** /v1/node/peers/{peer_id} | Get peer
-[**GetPeers**](NodeApi.md#GetPeers) | **Get** /v1/node/peers | Get node network peers
-[**GetSyncingStatus**](NodeApi.md#GetSyncingStatus) | **Get** /v1/node/syncing | Get node syncing status
+[**GetHealth**](NodeApi.md#GetHealth) | **Get** /eth/v1/node/health | Get health check
+[**GetNetworkIdentity**](NodeApi.md#GetNetworkIdentity) | **Get** /eth/v1/node/identity | Get node network identity
+[**GetNodeVersion**](NodeApi.md#GetNodeVersion) | **Get** /eth/v1/node/version | Get version string of the running beacon node.
+[**GetPeer**](NodeApi.md#GetPeer) | **Get** /eth/v1/node/peers/{peer_id} | Get peer
+[**GetPeers**](NodeApi.md#GetPeers) | **Get** /eth/v1/node/peers | Get node network peers
+[**GetSyncingStatus**](NodeApi.md#GetSyncingStatus) | **Get** /eth/v1/node/syncing | Get node syncing status
 
 
 
@@ -45,7 +45,7 @@ No authorization required
 
 ## GetNetworkIdentity
 
-> InlineResponse20015 GetNetworkIdentity(ctx, )
+> GetNetworkIdentityResponse GetNetworkIdentity(ctx, )
 
 Get node network identity
 
@@ -57,7 +57,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**InlineResponse20015**](inline_response_200_15.md)
+[**GetNetworkIdentityResponse**](GetNetworkIdentityResponse.md)
 
 ### Authorization
 
@@ -75,7 +75,7 @@ No authorization required
 
 ## GetNodeVersion
 
-> InlineResponse20018 GetNodeVersion(ctx, )
+> GetVersionResponse GetNodeVersion(ctx, )
 
 Get version string of the running beacon node.
 
@@ -87,7 +87,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**InlineResponse20018**](inline_response_200_18.md)
+[**GetVersionResponse**](GetVersionResponse.md)
 
 ### Authorization
 
@@ -105,7 +105,7 @@ No authorization required
 
 ## GetPeer
 
-> InlineResponse20017 GetPeer(ctx, peerId)
+> GetPeerResponse GetPeer(ctx, peerId)
 
 Get peer
 
@@ -121,7 +121,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse20017**](inline_response_200_17.md)
+[**GetPeerResponse**](GetPeerResponse.md)
 
 ### Authorization
 
@@ -139,7 +139,7 @@ No authorization required
 
 ## GetPeers
 
-> InlineResponse20016 GetPeers(ctx, )
+> GetPeersResponse GetPeers(ctx, )
 
 Get node network peers
 
@@ -151,7 +151,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**InlineResponse20016**](inline_response_200_16.md)
+[**GetPeersResponse**](GetPeersResponse.md)
 
 ### Authorization
 
@@ -169,7 +169,7 @@ No authorization required
 
 ## GetSyncingStatus
 
-> InlineResponse20019 GetSyncingStatus(ctx, )
+> GetSyncingStatusResponse GetSyncingStatus(ctx, )
 
 Get node syncing status
 
@@ -181,7 +181,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**InlineResponse20019**](inline_response_200_19.md)
+[**GetSyncingStatusResponse**](GetSyncingStatusResponse.md)
 
 ### Authorization
 
