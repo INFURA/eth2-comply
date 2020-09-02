@@ -4,17 +4,17 @@ All URIs are relative to *http://public-mainnet-node.ethereum.org/api*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**GetGenesis**](ValidatorRequiredApiApi.md#GetGenesis) | **Get** /v1/beacon/genesis | Retrieve details of the chain&#39;s genesis.
-[**GetStateFork**](ValidatorRequiredApiApi.md#GetStateFork) | **Get** /v1/beacon/states/{state_id}/fork | Get Fork object for requested state
-[**GetStateValidator**](ValidatorRequiredApiApi.md#GetStateValidator) | **Get** /v1/beacon/states/{state_id}/validators/{validator_id} | Get validator from state by id
-[**GetSyncingStatus**](ValidatorRequiredApiApi.md#GetSyncingStatus) | **Get** /v1/node/syncing | Get node syncing status
-[**SubmitPoolAttestations**](ValidatorRequiredApiApi.md#SubmitPoolAttestations) | **Post** /v1/beacon/pool/attestations | Submit Attestation object to node
+[**GetGenesis**](ValidatorRequiredApiApi.md#GetGenesis) | **Get** /eth/v1/beacon/genesis | Retrieve details of the chain&#39;s genesis.
+[**GetStateFork**](ValidatorRequiredApiApi.md#GetStateFork) | **Get** /eth/v1/beacon/states/{state_id}/fork | Get Fork object for requested state
+[**GetStateValidator**](ValidatorRequiredApiApi.md#GetStateValidator) | **Get** /eth/v1/beacon/states/{state_id}/validators/{validator_id} | Get validator from state by id
+[**GetSyncingStatus**](ValidatorRequiredApiApi.md#GetSyncingStatus) | **Get** /eth/v1/node/syncing | Get node syncing status
+[**PublishBlock**](ValidatorRequiredApiApi.md#PublishBlock) | **Post** /eth/v1/beacon/blocks | Publish a signed block.
 
 
 
 ## GetGenesis
 
-> InlineResponse200 GetGenesis(ctx, )
+> GetGenesisResponse GetGenesis(ctx, )
 
 Retrieve details of the chain's genesis.
 
@@ -26,7 +26,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**InlineResponse200**](inline_response_200.md)
+[**GetGenesisResponse**](GetGenesisResponse.md)
 
 ### Authorization
 
@@ -44,7 +44,7 @@ No authorization required
 
 ## GetStateFork
 
-> InlineResponse2002 GetStateFork(ctx, stateId)
+> GetStateForkResponse GetStateFork(ctx, stateId)
 
 Get Fork object for requested state
 
@@ -60,7 +60,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse2002**](inline_response_200_2.md)
+[**GetStateForkResponse**](GetStateForkResponse.md)
 
 ### Authorization
 
@@ -78,7 +78,7 @@ No authorization required
 
 ## GetStateValidator
 
-> InlineResponse2005 GetStateValidator(ctx, stateId, validatorId)
+> GetStateValidatorResponse GetStateValidator(ctx, stateId, validatorId)
 
 Get validator from state by id
 
@@ -95,7 +95,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**InlineResponse2005**](inline_response_200_5.md)
+[**GetStateValidatorResponse**](GetStateValidatorResponse.md)
 
 ### Authorization
 
@@ -113,7 +113,7 @@ No authorization required
 
 ## GetSyncingStatus
 
-> InlineResponse20019 GetSyncingStatus(ctx, )
+> GetSyncingStatusResponse GetSyncingStatus(ctx, )
 
 Get node syncing status
 
@@ -125,7 +125,7 @@ This endpoint does not need any parameter.
 
 ### Return type
 
-[**InlineResponse20019**](inline_response_200_19.md)
+[**GetSyncingStatusResponse**](GetSyncingStatusResponse.md)
 
 ### Authorization
 
@@ -141,13 +141,13 @@ No authorization required
 [[Back to README]](../README.md)
 
 
-## SubmitPoolAttestations
+## PublishBlock
 
-> SubmitPoolAttestations(ctx, inlineObject)
+> PublishBlock(ctx, inlineObject)
 
-Submit Attestation object to node
+Publish a signed block.
 
-Submits Attestation object to node. If attestation passes all validation constraints, node MUST publish attestation on appropriate subnet.
+Instructs the beacon node to broadcast a newly signed beacon block to the beacon network, to be included in the beacon chain. The beacon node is not required to validate the signed `BeaconBlock`, and a successful response (20X) only indicates that the broadcast has been successful. The beacon node is expected to integrate the new block into its state, and therefore validate the block internally, however blocks which fail the validation are still broadcast but a different status code is returned (202)
 
 ### Required Parameters
 
@@ -168,7 +168,7 @@ No authorization required
 ### HTTP request headers
 
 - **Content-Type**: application/json
-- **Accept**: Not defined
+- **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints)
 [[Back to Model list]](../README.md#documentation-for-models)

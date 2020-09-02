@@ -1,4 +1,0 @@
-{
-  "method": "GET",
-  "route": "/v1/beacon/pool/proposer_slashings"
-}
