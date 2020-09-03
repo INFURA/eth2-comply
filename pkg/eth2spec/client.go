@@ -50,9 +50,15 @@ type APIClient struct {
 
 	BeaconApi *BeaconApiService
 
+	ConfigApi *ConfigApiService
+
+	DebugApi *DebugApiService
+
+	EventsApi *EventsApiService
+
 	NodeApi *NodeApiService
 
-	ValidatorRequiredApiApi *ValidatorRequiredApiApiService
+	ValidatorApi *ValidatorApiService
 }
 
 type service struct {
@@ -72,8 +78,11 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 
 	// API Services
 	c.BeaconApi = (*BeaconApiService)(&c.common)
+	c.ConfigApi = (*ConfigApiService)(&c.common)
+	c.DebugApi = (*DebugApiService)(&c.common)
+	c.EventsApi = (*EventsApiService)(&c.common)
 	c.NodeApi = (*NodeApiService)(&c.common)
-	c.ValidatorRequiredApiApi = (*ValidatorRequiredApiApiService)(&c.common)
+	c.ValidatorApi = (*ValidatorApiService)(&c.common)
 
 	return c
 }
@@ -163,13 +172,12 @@ func parameterToJson(obj interface{}) (string, error) {
 	return string(jsonBuf), err
 }
 
-
 // callAPI do the request.
 func (c *APIClient) callAPI(request *http.Request) (*http.Response, error) {
 	if c.cfg.Debug {
-	        dump, err := httputil.DumpRequestOut(request, true)
+		dump, err := httputil.DumpRequestOut(request, true)
 		if err != nil {
-		        return nil, err
+			return nil, err
 		}
 		log.Printf("\n%s\n", string(dump))
 	}

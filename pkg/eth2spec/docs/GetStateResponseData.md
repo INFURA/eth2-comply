@@ -1,4 +1,4 @@
-# BeaconState
+# GetStateResponseData
 
 ## Properties
 

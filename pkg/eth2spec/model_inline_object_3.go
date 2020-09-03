@@ -8,8 +8,8 @@
  */
 
 package eth2spec
-// BeaconBlockAllOf1BodyProposerSlashings The [`ProposerSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/phase0/beacon-chain.md#proposerslashing) object from the Eth2.0 spec.
-type BeaconBlockAllOf1BodyProposerSlashings struct {
+// InlineObject3 The [`ProposerSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/phase0/beacon-chain.md#proposerslashing) object from the Eth2.0 spec.
+type InlineObject3 struct {
 	SignedHeader1 GetBlockHeadersResponseHeader `json:"signed_header_1,omitempty"`
 	SignedHeader2 GetBlockHeadersResponseHeader `json:"signed_header_2,omitempty"`
 }

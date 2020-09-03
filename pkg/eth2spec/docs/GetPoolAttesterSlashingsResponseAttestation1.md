@@ -1,12 +1,12 @@
-# InlineObject
+# GetPoolAttesterSlashingsResponseAttestation1
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**CommitteeIndex** | **string** |  | [optional] 
-**Slot** | **string** |  | [optional] 
-**IsAggregator** | **bool** | Signals to BN that a validator on the VC has been chosed for aggregator role. | [optional] 
+**AttestingIndices** | **[]string** | Attesting validator indices | [optional] 
+**Signature** | **string** |  | [optional] 
+**Data** | [**GetBlockAttestationsResponseData**](GetBlockAttestationsResponse_data.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

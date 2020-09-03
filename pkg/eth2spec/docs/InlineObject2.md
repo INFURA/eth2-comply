@@ -1,4 +1,4 @@
-# AttesterSlashing
+# InlineObject2
 
 ## Properties
 
