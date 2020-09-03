@@ -8,8 +8,8 @@
  */
 
 package eth2spec
-// AttesterSlashing The [`AttesterSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/core/0_beacon-chain.md#attesterslashing) object from the Eth2.0 spec.
-type AttesterSlashing struct {
+// InlineObject2 The [`AttesterSlashing`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/core/0_beacon-chain.md#attesterslashing) object from the Eth2.0 spec.
+type InlineObject2 struct {
 	Attestation1 GetPoolAttesterSlashingsResponseAttestation1 `json:"attestation_1,omitempty"`
 	Attestation2 GetPoolAttesterSlashingsResponseAttestation1 `json:"attestation_2,omitempty"`
 }

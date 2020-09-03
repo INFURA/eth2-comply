@@ -8,8 +8,8 @@
  */
 
 package eth2spec
-// BeaconStateEth1Data The [`Eth1Data`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/phase0/beacon-chain.md#eth1data) object from the Eth2.0 spec.
-type BeaconStateEth1Data struct {
+// GetStateResponseDataEth1Data The [`Eth1Data`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/phase0/beacon-chain.md#eth1data) object from the Eth2.0 spec.
+type GetStateResponseDataEth1Data struct {
 	DepositRoot string `json:"deposit_root,omitempty"`
 	DepositCount string `json:"deposit_count,omitempty"`
 	BlockHash string `json:"block_hash,omitempty"`

@@ -8,8 +8,8 @@
  */
 
 package eth2spec
-// BeaconBlockAllOf1BodyAttestation1 The [`IndexedAttestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/phase0/beacon-chain.md#indexedattestation) object from the Eth2.0 spec.
-type BeaconBlockAllOf1BodyAttestation1 struct {
+// GetPoolAttesterSlashingsResponseAttestation1 The [`IndexedAttestation`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/phase0/beacon-chain.md#indexedattestation) object from the Eth2.0 spec.
+type GetPoolAttesterSlashingsResponseAttestation1 struct {
 	// Attesting validator indices
 	AttestingIndices []string `json:"attesting_indices,omitempty"`
 	Signature string `json:"signature,omitempty"`

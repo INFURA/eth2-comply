@@ -11,11 +11,11 @@ package eth2spec
 // BeaconBlockAllOf1Body The [`BeaconBlockBody`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/phase0/beacon-chain.md#beaconblockbody) object from the Eth2.0 spec.
 type BeaconBlockAllOf1Body struct {
 	RandaoReveal string `json:"randao_reveal,omitempty"`
-	Eth1Data BeaconStateEth1Data `json:"eth1_data,omitempty"`
+	Eth1Data GetStateResponseDataEth1Data `json:"eth1_data,omitempty"`
 	Graffiti string `json:"graffiti,omitempty"`
-	ProposerSlashings []BeaconBlockAllOf1BodyProposerSlashings `json:"proposer_slashings,omitempty"`
-	AttesterSlashings []BeaconBlockAllOf1BodyAttesterSlashings `json:"attester_slashings,omitempty"`
+	ProposerSlashings []GetPoolProposerSlashingsResponseData `json:"proposer_slashings,omitempty"`
+	AttesterSlashings []GetPoolAttesterSlashingsResponseData `json:"attester_slashings,omitempty"`
 	Attestations []GetBlockAttestationsResponseData1 `json:"attestations,omitempty"`
 	Deposits []BeaconBlockAllOf1BodyDeposits `json:"deposits,omitempty"`
-	VoluntaryExits []BeaconBlockAllOf1BodyVoluntaryExits `json:"voluntary_exits,omitempty"`
+	VoluntaryExits []GetPoolVoluntaryExitsResponseMessage `json:"voluntary_exits,omitempty"`
 }

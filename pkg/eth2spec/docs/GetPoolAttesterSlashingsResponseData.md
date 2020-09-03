@@ -1,4 +1,4 @@
-# AttesterSlashing
+# GetPoolAttesterSlashingsResponseData
 
 ## Properties
 

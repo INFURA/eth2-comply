@@ -1,12 +1,11 @@
-# BeaconStateEth1Data
+# GetDepositContractResponseData
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**DepositRoot** | **string** |  | [optional] 
-**DepositCount** | **string** |  | [optional] 
-**BlockHash** | **string** |  | [optional] 
+**ChainId** | **int32** | Id of Eth1 chain on which contract is deployed. | [optional] 
+**Address** | **string** |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

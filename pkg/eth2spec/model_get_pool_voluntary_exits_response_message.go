@@ -8,8 +8,8 @@
  */
 
 package eth2spec
-// BeaconBlockAllOf1BodyVoluntaryExits The [`VoluntaryExit`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/phase0/beacon-chain.md#voluntaryexit) object from the Eth2.0 spec.
-type BeaconBlockAllOf1BodyVoluntaryExits struct {
+// GetPoolVoluntaryExitsResponseMessage The [`VoluntaryExit`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/phase0/beacon-chain.md#voluntaryexit) object from the Eth2.0 spec.
+type GetPoolVoluntaryExitsResponseMessage struct {
 	Epoch string `json:"epoch,omitempty"`
 	ValidatorIndex string `json:"validator_index,omitempty"`
 }

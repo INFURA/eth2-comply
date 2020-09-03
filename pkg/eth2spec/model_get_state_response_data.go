@@ -8,8 +8,8 @@
  */
 
 package eth2spec
-// BeaconState The [`BeaconState`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/phase0/beacon-chain.md#beaconblock) object from the Eth2.0 spec.
-type BeaconState struct {
+// GetStateResponseData The [`BeaconState`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/phase0/beacon-chain.md#beaconblock) object from the Eth2.0 spec.
+type GetStateResponseData struct {
 	GenesisTime string `json:"genesis_time,omitempty"`
 	GenesisValidatorsRoot string `json:"genesis_validators_root,omitempty"`
 	Slot string `json:"slot,omitempty"`

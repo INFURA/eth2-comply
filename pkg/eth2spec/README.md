@@ -40,23 +40,52 @@ Class | Method | HTTP request | Description
 *BeaconApi* | [**GetBlockRoot**](docs/BeaconApi.md#getblockroot) | **Get** /eth/v1/beacon/blocks/{block_id}/root | Get block root
 *BeaconApi* | [**GetEpochCommittees**](docs/BeaconApi.md#getepochcommittees) | **Get** /eth/v1/beacon/states/{state_id}/committees/{epoch} | Get all committees for epoch
 *BeaconApi* | [**GetGenesis**](docs/BeaconApi.md#getgenesis) | **Get** /eth/v1/beacon/genesis | Retrieve details of the chain&#39;s genesis.
+*BeaconApi* | [**GetPoolAttestations**](docs/BeaconApi.md#getpoolattestations) | **Get** /eth/v1/beacon/pool/attestations | Get Attestations from operations pool
+*BeaconApi* | [**GetPoolAttesterSlashings**](docs/BeaconApi.md#getpoolattesterslashings) | **Get** /eth/v1/beacon/pool/atttester_slashings | Get AttesterSlashings from operations pool
+*BeaconApi* | [**GetPoolProposerSlashings**](docs/BeaconApi.md#getpoolproposerslashings) | **Get** /eth/v1/beacon/pool/proposer_slashings | Get ProposerSlashings from operations pool
+*BeaconApi* | [**GetPoolVoluntaryExits**](docs/BeaconApi.md#getpoolvoluntaryexits) | **Get** /eth/v1/beacon/pool/voluntary_exits | Get SignedVoluntaryExit from operations pool
 *BeaconApi* | [**GetStateFinalityCheckpoints**](docs/BeaconApi.md#getstatefinalitycheckpoints) | **Get** /eth/v1/beacon/states/{state_id}/finality_checkpoints | Get state finality checkpoints
 *BeaconApi* | [**GetStateFork**](docs/BeaconApi.md#getstatefork) | **Get** /eth/v1/beacon/states/{state_id}/fork | Get Fork object for requested state
 *BeaconApi* | [**GetStateRoot**](docs/BeaconApi.md#getstateroot) | **Get** /eth/v1/beacon/states/{state_id}/root | Get state SSZ HashTreeRoot
 *BeaconApi* | [**GetStateValidator**](docs/BeaconApi.md#getstatevalidator) | **Get** /eth/v1/beacon/states/{state_id}/validators/{validator_id} | Get validator from state by id
 *BeaconApi* | [**GetStateValidators**](docs/BeaconApi.md#getstatevalidators) | **Get** /eth/v1/beacon/states/{state_id}/validators | Get validators from state
 *BeaconApi* | [**PublishBlock**](docs/BeaconApi.md#publishblock) | **Post** /eth/v1/beacon/blocks | Publish a signed block.
+*BeaconApi* | [**SubmitPoolAttestations**](docs/BeaconApi.md#submitpoolattestations) | **Post** /eth/v1/beacon/pool/attestations | Submit Attestation object to node
+*BeaconApi* | [**SubmitPoolAttesterSlashings**](docs/BeaconApi.md#submitpoolattesterslashings) | **Post** /eth/v1/beacon/pool/atttester_slashings | Submit AttesterSlashing object to node&#39;s pool
+*BeaconApi* | [**SubmitPoolProposerSlashings**](docs/BeaconApi.md#submitpoolproposerslashings) | **Post** /eth/v1/beacon/pool/proposer_slashings | Submit ProposerSlashing object to node&#39;s pool
+*BeaconApi* | [**SubmitPoolVoluntaryExit**](docs/BeaconApi.md#submitpoolvoluntaryexit) | **Post** /eth/v1/beacon/pool/voluntary_exits | Submit SignedVoluntaryExit object to node&#39;s pool
+*ConfigApi* | [**GetDepositContract**](docs/ConfigApi.md#getdepositcontract) | **Get** /eth/v1/config/deposit_contract | Get deposit contract address.
+*ConfigApi* | [**GetForkSchedule**](docs/ConfigApi.md#getforkschedule) | **Get** /eth/v1/config/fork_schedule | Get scheduled upcoming forks.
+*ConfigApi* | [**GetSpec**](docs/ConfigApi.md#getspec) | **Get** /eth/v1/config/spec | Get spec params.
+*DebugApi* | [**GetDebugChainHeads**](docs/DebugApi.md#getdebugchainheads) | **Get** /eth/v1/debug/beacon/heads | Get fork choice leaves
+*DebugApi* | [**GetState**](docs/DebugApi.md#getstate) | **Get** /eth/v1/debug/beacon/states/{state_id} | Get full BeaconState object
+*EventsApi* | [**Eventstream**](docs/EventsApi.md#eventstream) | **Get** /eth/v1/events | Subscribe to beacon node events
 *NodeApi* | [**GetHealth**](docs/NodeApi.md#gethealth) | **Get** /eth/v1/node/health | Get health check
 *NodeApi* | [**GetNetworkIdentity**](docs/NodeApi.md#getnetworkidentity) | **Get** /eth/v1/node/identity | Get node network identity
 *NodeApi* | [**GetNodeVersion**](docs/NodeApi.md#getnodeversion) | **Get** /eth/v1/node/version | Get version string of the running beacon node.
 *NodeApi* | [**GetPeer**](docs/NodeApi.md#getpeer) | **Get** /eth/v1/node/peers/{peer_id} | Get peer
 *NodeApi* | [**GetPeers**](docs/NodeApi.md#getpeers) | **Get** /eth/v1/node/peers | Get node network peers
 *NodeApi* | [**GetSyncingStatus**](docs/NodeApi.md#getsyncingstatus) | **Get** /eth/v1/node/syncing | Get node syncing status
+*ValidatorApi* | [**GetAggregatedAttestation**](docs/ValidatorApi.md#getaggregatedattestation) | **Get** /eth/v1/validator/aggregate_attestation | Get aggregated attestation
+*ValidatorApi* | [**GetAttesterDuties**](docs/ValidatorApi.md#getattesterduties) | **Get** /eth/v1/validator/duties/attester/{epoch} | Get attester duties
+*ValidatorApi* | [**GetProposerDuties**](docs/ValidatorApi.md#getproposerduties) | **Get** /eth/v1/validator/duties/proposer/{epoch} | Get block proposers duties
+*ValidatorApi* | [**PrepareBeaconCommitteeSubnet**](docs/ValidatorApi.md#preparebeaconcommitteesubnet) | **Post** /eth/v1/validator/beacon_committee_subscriptions | Signal beacon node to prepare for a committee subnet
+*ValidatorApi* | [**ProduceAttestationData**](docs/ValidatorApi.md#produceattestationdata) | **Get** /eth/v1/validator/attestation_data | Produce an attestation data
+*ValidatorApi* | [**ProduceBlock**](docs/ValidatorApi.md#produceblock) | **Get** /eth/v1/validator/blocks/{slot} | Produce a new block, without signature.
+*ValidatorApi* | [**PublishAggregateAndProof**](docs/ValidatorApi.md#publishaggregateandproof) | **Post** /eth/v1/validator/aggregate_and_proofs | Publish aggregate and proof
+*ValidatorRequiredApiApi* | [**GetAggregatedAttestation**](docs/ValidatorRequiredApiApi.md#getaggregatedattestation) | **Get** /eth/v1/validator/aggregate_attestation | Get aggregated attestation
+*ValidatorRequiredApiApi* | [**GetAttesterDuties**](docs/ValidatorRequiredApiApi.md#getattesterduties) | **Get** /eth/v1/validator/duties/attester/{epoch} | Get attester duties
 *ValidatorRequiredApiApi* | [**GetGenesis**](docs/ValidatorRequiredApiApi.md#getgenesis) | **Get** /eth/v1/beacon/genesis | Retrieve details of the chain&#39;s genesis.
+*ValidatorRequiredApiApi* | [**GetProposerDuties**](docs/ValidatorRequiredApiApi.md#getproposerduties) | **Get** /eth/v1/validator/duties/proposer/{epoch} | Get block proposers duties
 *ValidatorRequiredApiApi* | [**GetStateFork**](docs/ValidatorRequiredApiApi.md#getstatefork) | **Get** /eth/v1/beacon/states/{state_id}/fork | Get Fork object for requested state
 *ValidatorRequiredApiApi* | [**GetStateValidator**](docs/ValidatorRequiredApiApi.md#getstatevalidator) | **Get** /eth/v1/beacon/states/{state_id}/validators/{validator_id} | Get validator from state by id
 *ValidatorRequiredApiApi* | [**GetSyncingStatus**](docs/ValidatorRequiredApiApi.md#getsyncingstatus) | **Get** /eth/v1/node/syncing | Get node syncing status
+*ValidatorRequiredApiApi* | [**PrepareBeaconCommitteeSubnet**](docs/ValidatorRequiredApiApi.md#preparebeaconcommitteesubnet) | **Post** /eth/v1/validator/beacon_committee_subscriptions | Signal beacon node to prepare for a committee subnet
+*ValidatorRequiredApiApi* | [**ProduceAttestationData**](docs/ValidatorRequiredApiApi.md#produceattestationdata) | **Get** /eth/v1/validator/attestation_data | Produce an attestation data
+*ValidatorRequiredApiApi* | [**ProduceBlock**](docs/ValidatorRequiredApiApi.md#produceblock) | **Get** /eth/v1/validator/blocks/{slot} | Produce a new block, without signature.
+*ValidatorRequiredApiApi* | [**PublishAggregateAndProof**](docs/ValidatorRequiredApiApi.md#publishaggregateandproof) | **Post** /eth/v1/validator/aggregate_and_proofs | Publish aggregate and proof
 *ValidatorRequiredApiApi* | [**PublishBlock**](docs/ValidatorRequiredApiApi.md#publishblock) | **Post** /eth/v1/beacon/blocks | Publish a signed block.
+*ValidatorRequiredApiApi* | [**SubmitPoolAttestations**](docs/ValidatorRequiredApiApi.md#submitpoolattestations) | **Post** /eth/v1/beacon/pool/attestations | Submit Attestation object to node
 
 
 ## Documentation For Models
@@ -69,19 +98,17 @@ Class | Method | HTTP request | Description
  - [BeaconBlockAllOf](docs/BeaconBlockAllOf.md)
  - [BeaconBlockAllOf1](docs/BeaconBlockAllOf1.md)
  - [BeaconBlockAllOf1Body](docs/BeaconBlockAllOf1Body.md)
- - [BeaconBlockAllOf1BodyAttestation1](docs/BeaconBlockAllOf1BodyAttestation1.md)
- - [BeaconBlockAllOf1BodyAttesterSlashings](docs/BeaconBlockAllOf1BodyAttesterSlashings.md)
  - [BeaconBlockAllOf1BodyData](docs/BeaconBlockAllOf1BodyData.md)
  - [BeaconBlockAllOf1BodyDeposits](docs/BeaconBlockAllOf1BodyDeposits.md)
- - [BeaconBlockAllOf1BodyProposerSlashings](docs/BeaconBlockAllOf1BodyProposerSlashings.md)
- - [BeaconBlockAllOf1BodyVoluntaryExits](docs/BeaconBlockAllOf1BodyVoluntaryExits.md)
  - [BeaconState](docs/BeaconState.md)
- - [BeaconStateEth1Data](docs/BeaconStateEth1Data.md)
  - [Checkpoint](docs/Checkpoint.md)
  - [Committee](docs/Committee.md)
  - [ErrorMessage](docs/ErrorMessage.md)
  - [Fork](docs/Fork.md)
  - [GenesisTime](docs/GenesisTime.md)
+ - [GetAggregatedAttestationResponse](docs/GetAggregatedAttestationResponse.md)
+ - [GetAttesterDutiesResponse](docs/GetAttesterDutiesResponse.md)
+ - [GetAttesterDutiesResponseData](docs/GetAttesterDutiesResponseData.md)
  - [GetBlockAttestationsResponse](docs/GetBlockAttestationsResponse.md)
  - [GetBlockAttestationsResponseData](docs/GetBlockAttestationsResponseData.md)
  - [GetBlockAttestationsResponseData1](docs/GetBlockAttestationsResponseData1.md)
@@ -93,8 +120,13 @@ Class | Method | HTTP request | Description
  - [GetBlockResponseData](docs/GetBlockResponseData.md)
  - [GetBlockRootResponse](docs/GetBlockRootResponse.md)
  - [GetBlockRootResponseData](docs/GetBlockRootResponseData.md)
+ - [GetDebugChainHeadsResponse](docs/GetDebugChainHeadsResponse.md)
+ - [GetDebugChainHeadsResponseData](docs/GetDebugChainHeadsResponseData.md)
+ - [GetDepositContractResponse](docs/GetDepositContractResponse.md)
+ - [GetDepositContractResponseData](docs/GetDepositContractResponseData.md)
  - [GetEpochCommitteesResponse](docs/GetEpochCommitteesResponse.md)
  - [GetEpochCommitteesResponseData](docs/GetEpochCommitteesResponseData.md)
+ - [GetForkScheduleResponse](docs/GetForkScheduleResponse.md)
  - [GetGenesisResponse](docs/GetGenesisResponse.md)
  - [GetGenesisResponseData](docs/GetGenesisResponseData.md)
  - [GetNetworkIdentityResponse](docs/GetNetworkIdentityResponse.md)
@@ -103,11 +135,25 @@ Class | Method | HTTP request | Description
  - [GetPeerResponse](docs/GetPeerResponse.md)
  - [GetPeersResponse](docs/GetPeersResponse.md)
  - [GetPeersResponseData](docs/GetPeersResponseData.md)
+ - [GetPoolAttesterSlashingsResponse](docs/GetPoolAttesterSlashingsResponse.md)
+ - [GetPoolAttesterSlashingsResponseAttestation1](docs/GetPoolAttesterSlashingsResponseAttestation1.md)
+ - [GetPoolAttesterSlashingsResponseData](docs/GetPoolAttesterSlashingsResponseData.md)
+ - [GetPoolProposerSlashingsResponse](docs/GetPoolProposerSlashingsResponse.md)
+ - [GetPoolProposerSlashingsResponseData](docs/GetPoolProposerSlashingsResponseData.md)
+ - [GetPoolVoluntaryExitsResponse](docs/GetPoolVoluntaryExitsResponse.md)
+ - [GetPoolVoluntaryExitsResponseData](docs/GetPoolVoluntaryExitsResponseData.md)
+ - [GetPoolVoluntaryExitsResponseMessage](docs/GetPoolVoluntaryExitsResponseMessage.md)
+ - [GetProposerDutiesResponse](docs/GetProposerDutiesResponse.md)
+ - [GetProposerDutiesResponseData](docs/GetProposerDutiesResponseData.md)
+ - [GetSpecResponse](docs/GetSpecResponse.md)
  - [GetStateFinalityCheckpointsResponse](docs/GetStateFinalityCheckpointsResponse.md)
  - [GetStateFinalityCheckpointsResponseData](docs/GetStateFinalityCheckpointsResponseData.md)
  - [GetStateFinalityCheckpointsResponseDataPreviousJustified](docs/GetStateFinalityCheckpointsResponseDataPreviousJustified.md)
  - [GetStateForkResponse](docs/GetStateForkResponse.md)
  - [GetStateForkResponseData](docs/GetStateForkResponseData.md)
+ - [GetStateResponse](docs/GetStateResponse.md)
+ - [GetStateResponseData](docs/GetStateResponseData.md)
+ - [GetStateResponseDataEth1Data](docs/GetStateResponseDataEth1Data.md)
  - [GetStateRootResponse](docs/GetStateRootResponse.md)
  - [GetStateRootResponseData](docs/GetStateRootResponseData.md)
  - [GetStateValidatorResponse](docs/GetStateValidatorResponse.md)
@@ -119,10 +165,17 @@ Class | Method | HTTP request | Description
  - [GetVersionResponse](docs/GetVersionResponse.md)
  - [GetVersionResponseData](docs/GetVersionResponseData.md)
  - [InlineObject](docs/InlineObject.md)
+ - [InlineObject1](docs/InlineObject1.md)
+ - [InlineObject2](docs/InlineObject2.md)
+ - [InlineObject3](docs/InlineObject3.md)
+ - [InlineObject4](docs/InlineObject4.md)
+ - [InlineObject5](docs/InlineObject5.md)
  - [InlineResponse400](docs/InlineResponse400.md)
  - [InlineResponse500](docs/InlineResponse500.md)
  - [NetworkIdentity](docs/NetworkIdentity.md)
  - [Peer](docs/Peer.md)
+ - [ProduceAttestationDataResponse](docs/ProduceAttestationDataResponse.md)
+ - [ProduceBlockResponse](docs/ProduceBlockResponse.md)
  - [ProposerDuty](docs/ProposerDuty.md)
  - [ProposerSlashing](docs/ProposerSlashing.md)
  - [SignedAggregateAndProof](docs/SignedAggregateAndProof.md)

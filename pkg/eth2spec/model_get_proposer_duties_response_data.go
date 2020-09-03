@@ -8,10 +8,9 @@
  */
 
 package eth2spec
-// InlineObject struct for InlineObject
-type InlineObject struct {
-	CommitteeIndex string `json:"committee_index,omitempty"`
+// GetProposerDutiesResponseData struct for GetProposerDutiesResponseData
+type GetProposerDutiesResponseData struct {
+	// The validator's BLS public key, uniquely identifying them. _48-bytes, hex encoded with 0x prefix, case insensitive._
+	Pubkey string `json:"pubkey,omitempty"`
 	Slot string `json:"slot,omitempty"`
-	// Signals to BN that a validator on the VC has been chosed for aggregator role.
-	IsAggregator bool `json:"is_aggregator,omitempty"`
 }

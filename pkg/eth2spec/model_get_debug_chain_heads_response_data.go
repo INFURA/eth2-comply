@@ -8,10 +8,8 @@
  */
 
 package eth2spec
-// InlineObject struct for InlineObject
-type InlineObject struct {
-	CommitteeIndex string `json:"committee_index,omitempty"`
+// GetDebugChainHeadsResponseData struct for GetDebugChainHeadsResponseData
+type GetDebugChainHeadsResponseData struct {
+	Root string `json:"root,omitempty"`
 	Slot string `json:"slot,omitempty"`
-	// Signals to BN that a validator on the VC has been chosed for aggregator role.
-	IsAggregator bool `json:"is_aggregator,omitempty"`
 }

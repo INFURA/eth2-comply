@@ -8,8 +8,8 @@
  */
 
 package eth2spec
-// SignedVoluntaryExit The [`SignedVoluntaryExit`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/phase0/beacon-chain.md#signedvoluntaryexit) object from the Eth2.0 spec.
-type SignedVoluntaryExit struct {
+// InlineObject4 The [`SignedVoluntaryExit`](https://github.com/ethereum/eth2.0-specs/blob/v0.12.2/specs/phase0/beacon-chain.md#signedvoluntaryexit) object from the Eth2.0 spec.
+type InlineObject4 struct {
 	Message GetPoolVoluntaryExitsResponseMessage `json:"message,omitempty"`
 	Signature string `json:"signature,omitempty"`
 }
