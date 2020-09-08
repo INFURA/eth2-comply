@@ -25,7 +25,7 @@ func (e BadTargetError) Error() string {
 func IsHealthy(ctx context.Context) error {
 	for {
 		if ctx.Err() != nil {
-			return BadTargetError{Route: "/v1/node/health", Err: ctx.Err()}
+			return BadTargetError{Route: "/eth/v1/node/health", Err: ctx.Err()}
 		}
 
 		client := oapi.GetClient(ctx)

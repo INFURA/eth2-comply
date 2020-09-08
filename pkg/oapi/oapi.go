@@ -18,7 +18,7 @@ const clientKey key = 0
 func WithClient(ctx context.Context, target url.URL) context.Context {
 	cfg := eth2spec.NewConfiguration()
 
-	cfg.Host = target.Host
+	cfg.BasePath = "http://" + target.Host
 
 	client := eth2spec.NewAPIClient(cfg)
 
