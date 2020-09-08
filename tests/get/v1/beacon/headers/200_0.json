@@ -1,4 +1,4 @@
 {
   "method": "GET",
-  "route": "/v1/beacon/headers"
+  "route": "/eth/v1/beacon/headers"
 }

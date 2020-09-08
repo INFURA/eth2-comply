@@ -1,4 +1,4 @@
 {
   "method": "GET",
-  "route": "/v1/node/syncing"
+  "route": "/eth/v1/node/syncing"
 }
