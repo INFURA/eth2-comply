@@ -44,10 +44,10 @@ func (c Case) execGetOperation(ctx context.Context, route string) (*oapi.Executo
 	switch {
 	case strings.Contains(route, "/node/"):
 		return c.execGetNodeOperation(ctx, route)
-	case strings.Contains(route, "/beacon/"):
-		return c.execGetBeaconOperation(ctx, route)
 	case strings.Contains(route, "/debug/"):
 		return c.execGetDebugOperation(ctx, route)
+	case strings.Contains(route, "/beacon/"):
+		return c.execGetBeaconOperation(ctx, route)
 	case strings.Contains(route, "/config/"):
 		return c.execGetConfigOperation(ctx, route)
 	}
@@ -139,12 +139,9 @@ func (c Case) execGetDebugOperation(ctx context.Context, route string) (*oapi.Ex
 	uriTokens := strings.Split(route, "/")
 
 	switch {
-	case strings.Contains(route, "/beacon"):
-		switch {
-		case strings.Contains(route, "/states/"):
-			stateId := uriTokens[5]
-			return oapi.ExecGetDebugBeaconStates(ctx, stateId)
-		}
+	case strings.Contains(route, "/states/"):
+		stateId := uriTokens[5]
+		return oapi.ExecGetDebugBeaconStates(ctx, stateId)
 	case strings.Contains(route, "/heads"):
 		return oapi.ExecGetDebugBeaconHeads(ctx)
 	}
