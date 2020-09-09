@@ -46,7 +46,8 @@ func (c Case) execGetOperation(ctx context.Context, route string) (*oapi.Executo
 		return c.execGetNodeOperation(ctx, route)
 	case strings.Contains(route, "/beacon/"):
 		return c.execGetBeaconOperation(ctx, route)
-
+	case strings.Contains(route, "/debug/"):
+		return c.execGetDebugOperation(ctx, route)
 	}
 
 	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}
@@ -127,6 +128,23 @@ func (c Case) execGetBeaconStatesOperation(ctx context.Context, route string) (*
 		return oapi.ExecGetBeaconStatesValidator(ctx, stateId, validatorId)
 	case strings.Contains(route, "/validators"):
 		return oapi.ExecGetBeaconStatesValidators(ctx, stateId, c.Config.QueryParams)
+	}
+
+	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}
+}
+
+func (c Case) execGetDebugOperation(ctx context.Context, route string) (*oapi.ExecutorResult, error) {
+	uriTokens := strings.Split(route, "/")
+
+	switch {
+	case strings.Contains(route, "/beacon"):
+		switch {
+		case strings.Contains(route, "/states/"):
+			stateId := uriTokens[5]
+			return oapi.ExecGetDebugBecaonStates(ctx, stateId)
+		}
+	case strings.Contains(route, "/heads"):
+		return oapi.ExecGetDebugBeaconHeads(ctx)
 	}
 
 	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}

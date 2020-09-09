@@ -375,3 +375,36 @@ func ExecGetNodePeer(ctx context.Context, peerId string) (*ExecutorResult, error
 
 	return result, nil
 }
+
+func ExecGetDebugBeaconHeads(ctx context.Context) (*ExecutorResult, error) {
+	client := GetClient(ctx)
+	heads, httpdata, err := client.DebugApi.GetDebugChainHeads(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ExecutorResult{
+		Response:   heads,
+		ResponseDS: eth2spec.GetDebugChainHeadsResponse{},
+		StatusCode: &httpdata.StatusCode,
+	}
+
+	return result, nil
+
+}
+
+func ExecGetDebugBecaonStates(ctx context.Context, stateId string) (*ExecutorResult, error) {
+	client := GetClient(ctx)
+	states, httpdata, err := client.DebugApi.GetState(ctx, stateId)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ExecutorResult{
+		Response:   states,
+		ResponseDS: eth2spec.GetStateResponse{},
+		StatusCode: &httpdata.StatusCode,
+	}
+
+	return result, nil
+}
