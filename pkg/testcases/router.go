@@ -161,3 +161,33 @@ func (c Case) execGetConfigOperation(ctx context.Context, route string) (*oapi.E
 
 	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}
 }
+
+func (c Case) execGetValidatorOperation(ctx context.Context, route string) (*oapi.ExecutorResult, error) {
+	uriTokens := strings.Split(route, "/")
+
+	switch {
+	case strings.Contains(route, "/duties/"):
+		switch {
+		case strings.Contains(route, "/attester/"):
+			opts := oapi.ExecGetValidatorDutiesAttesterOpts{
+				Epoch:       uriTokens[5],
+				QueryParams: c.Config.QueryParams,
+			}
+			return oapi.ExecGetValidatorDutiesAttester(ctx, opts)
+		case strings.Contains(route, "/proposer/"):
+			return oapi.ExecGetValidatorDutiesProposer(ctx, uriTokens[5])
+		}
+	case strings.Contains(route, "/blocks/"):
+		opts := oapi.ExecGetValidatorBlocksOpts{
+			Slot:        uriTokens[4],
+			QueryParams: c.Config.QueryParams,
+		}
+		return oapi.ExecGetValidatorBlocks(ctx, opts)
+	case strings.Contains(route, "/attestation_data"):
+		return oapi.ExecGetValidatorAttestationData(ctx, c.Config.QueryParams)
+	case strings.Contains(route, "/aggregate_attestations"):
+		return oapi.ExecGetValidatorAggregateAttestation(ctx, c.Config.QueryParams)
+	}
+
+	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}
+}
