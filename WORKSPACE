@@ -159,3 +159,10 @@ go_repository(
     sum = "h1:xK2lYat7ZLaVVcIuj82J8kIro4V6kDe0AUDFboUCwcg=",
     version = "v1.0.0",
 )
+
+go_repository(
+    name = "com_github_avast_retry_go",
+    importpath = "github.com/avast/retry-go",
+    sum = "h1:FelcMrm7Bxacr1/RM8+/eqkDkmVN7tjlsy51dOzB3LI=",
+    version = "v2.6.0+incompatible",
+)
