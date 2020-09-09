@@ -1,0 +1,4 @@
+{
+  "method": "GET",
+  "route": "/eth/v1/config/deposit_contract"
+}
