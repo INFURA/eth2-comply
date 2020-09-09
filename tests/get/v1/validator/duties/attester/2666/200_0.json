@@ -1,4 +1,0 @@
-{
-  "method": "GET",
-  "route": "/eth/v1/validator/duties/attester/2666"
-}

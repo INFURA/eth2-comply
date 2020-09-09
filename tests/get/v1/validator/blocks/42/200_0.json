@@ -1,0 +1,5 @@
+{
+  "method": "GET",
+  "route": "/eth/v1/validator/blocks/42",
+  "awaitSlot": 42
+}
