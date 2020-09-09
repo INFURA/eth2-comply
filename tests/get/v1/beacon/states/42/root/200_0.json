@@ -1,0 +1,5 @@
+{
+  "method": "GET",
+  "route": "/eth/v1/beacon/states/42/root",
+  "awaitSlot": 42
+}

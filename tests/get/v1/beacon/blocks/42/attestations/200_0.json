@@ -1,0 +1,5 @@
+{
+  "method": "GET",
+  "route": "/eth/v1/beacon/blocks/42/attestations",
+  "awaitSlot": 42
+}

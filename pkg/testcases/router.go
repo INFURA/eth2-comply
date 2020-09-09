@@ -42,6 +42,8 @@ func (c Case) execOperation(ctx context.Context) (*oapi.ExecutorResult, error) {
 
 func (c Case) execGetOperation(ctx context.Context, route string) (*oapi.ExecutorResult, error) {
 	switch {
+	case strings.Contains(route, "/validator/"):
+		return c.execGetValidatorOperation(ctx, route)
 	case strings.Contains(route, "/node/"):
 		return c.execGetNodeOperation(ctx, route)
 	case strings.Contains(route, "/debug/"):
@@ -185,7 +187,7 @@ func (c Case) execGetValidatorOperation(ctx context.Context, route string) (*oap
 		return oapi.ExecGetValidatorBlocks(ctx, opts)
 	case strings.Contains(route, "/attestation_data"):
 		return oapi.ExecGetValidatorAttestationData(ctx, c.Config.QueryParams)
-	case strings.Contains(route, "/aggregate_attestations"):
+	case strings.Contains(route, "/aggregate_attestation"):
 		return oapi.ExecGetValidatorAggregateAttestation(ctx, c.Config.QueryParams)
 	}
 

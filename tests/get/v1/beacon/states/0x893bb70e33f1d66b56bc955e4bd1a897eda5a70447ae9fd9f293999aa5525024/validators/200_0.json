@@ -1,4 +1,0 @@
-{
-  "method": "GET",
-  "route": "/eth/v1/beacon/states/0x893bb70e33f1d66b56bc955e4bd1a897eda5a70447ae9fd9f293999aa5525024/validators"
-}
