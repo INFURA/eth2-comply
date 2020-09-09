@@ -4,6 +4,7 @@ package oapi
 import (
 	"context"
 	"net/url"
+	"strings"
 
 	"github.com/INFURA/eth2-comply/pkg/eth2spec"
 	"github.com/antihax/optional"
@@ -451,6 +452,136 @@ func ExecGetConfigDepositContract(ctx context.Context) (*ExecutorResult, error) 
 	result := &ExecutorResult{
 		Response:   DepositContract,
 		ResponseDS: eth2spec.GetDepositContractResponse{},
+		StatusCode: &httpdata.StatusCode,
+	}
+
+	return result, nil
+}
+
+type ExecGetValidatorDutiesAttesterOpts struct {
+	Epoch       string
+	QueryParams map[string]string
+}
+
+func ExecGetValidatorDutiesAttester(
+	ctx context.Context,
+	opts ExecGetValidatorDutiesAttesterOpts) (*ExecutorResult, error) {
+	var index []string
+	if val, ok := opts.QueryParams["index"]; ok {
+		index = strings.Split(val, ",")
+	}
+
+	client := GetClient(ctx)
+	attester, httpdata, err := client.ValidatorApi.GetAttesterDuties(ctx, opts.Epoch, index)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ExecutorResult{
+		Response:   attester,
+		ResponseDS: eth2spec.GetAttesterDutiesResponse{},
+		StatusCode: &httpdata.StatusCode,
+	}
+
+	return result, nil
+}
+
+func ExecGetValidatorDutiesProposer(ctx context.Context, epoch string) (*ExecutorResult, error) {
+	client := GetClient(ctx)
+	proposer, httpdata, err := client.ValidatorApi.GetProposerDuties(ctx, epoch)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ExecutorResult{
+		Response:   proposer,
+		ResponseDS: eth2spec.GetProposerDutiesResponse{},
+		StatusCode: &httpdata.StatusCode,
+	}
+
+	return result, nil
+}
+
+type ExecGetValidatorBlocksOpts struct {
+	Slot        string
+	QueryParams map[string]string
+}
+
+func ExecGetValidatorBlocks(
+	ctx context.Context,
+	opts ExecGetValidatorBlocksOpts) (*ExecutorResult, error) {
+	var randaoReveal string
+	if val, ok := opts.QueryParams["randao_reveal"]; ok {
+		randaoReveal = val
+	}
+	produceBlockOpts := &eth2spec.ProduceBlockOpts{}
+	if val, ok := opts.QueryParams["graffiti"]; ok {
+		produceBlockOpts.Graffiti = optional.NewString(val)
+	}
+
+	client := GetClient(ctx)
+	block, httpdata, err := client.ValidatorApi.ProduceBlock(ctx, opts.Slot, randaoReveal, produceBlockOpts)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ExecutorResult{
+		Response:   block,
+		ResponseDS: eth2spec.ProduceBlockResponse{},
+		StatusCode: &httpdata.StatusCode,
+	}
+
+	return result, nil
+}
+
+func ExecGetValidatorAttestationData(
+	ctx context.Context,
+	queryParams map[string]string) (*ExecutorResult, error) {
+	var slot string
+	if val, ok := queryParams["slot"]; ok {
+		slot = val
+	}
+	var committeeIndex string
+	if val, ok := queryParams["committee_index"]; ok {
+		committeeIndex = val
+	}
+
+	client := GetClient(ctx)
+	data, httpdata, err := client.ValidatorApi.ProduceAttestationData(ctx, slot, committeeIndex)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ExecutorResult{
+		Response:   data,
+		ResponseDS: eth2spec.ProduceAttestationDataResponse{},
+		StatusCode: &httpdata.StatusCode,
+	}
+
+	return result, nil
+}
+
+func ExecGetValidatorAggregateAttestation(
+	ctx context.Context,
+	queryParams map[string]string) (*ExecutorResult, error) {
+	var attestationDataRoot string
+	if val, ok := queryParams["attestation_data_root"]; ok {
+		attestationDataRoot = val
+	}
+	var slot string
+	if val, ok := queryParams["slot"]; ok {
+		slot = val
+	}
+
+	client := GetClient(ctx)
+	aggregate, httpdata, err := client.ValidatorApi.GetAggregatedAttestation(ctx, attestationDataRoot, slot)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ExecutorResult{
+		Response:   aggregate,
+		ResponseDS: eth2spec.GetAggregatedAttestationResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 

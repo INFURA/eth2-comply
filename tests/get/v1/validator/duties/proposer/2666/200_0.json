@@ -1,0 +1,4 @@
+{
+  "method": "GET",
+  "route": "/eth/v1/validator/duties/proposer/2666"
+}
