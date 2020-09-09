@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/INFURA/eth2-comply/pkg/oapi"
+	"github.com/avast/retry-go"
 )
 
 type BadTargetError struct {
@@ -41,29 +42,52 @@ func IsHealthy(ctx context.Context) error {
 
 }
 
+type ClientMissingTargetSlotErr struct {
+	Current int
+	Target  int
+}
+
+func (e *ClientMissingTargetSlotErr) Error() string {
+	return fmt.Sprintf("Target is at slot %d. Needs slot %d.", e.Current, e.Target)
+}
+
 // HasSlot blocks until the target server has synchronized the slot needed for
 // the test case.
 func HasSlot(ctx context.Context, awaitSlot int) error {
-	for {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
+	var defaultRetryInterval time.Duration = time.Second
+	var defaultRetryAttempts uint
 
-		headSlot, syncDistance, err := getHeadSlotAndSyncDistance(ctx)
-		if err != nil {
-			return err
-		}
-
-		currentSlot := headSlot - syncDistance
-
-		switch {
-		case currentSlot >= awaitSlot:
-			return nil
-		default:
-			time.Sleep(time.Second)
-			continue
-		}
+	if deadline, ok := ctx.Deadline(); ok {
+		timeToDeadline := time.Until(deadline)
+		defaultRetryAttempts = uint((timeToDeadline.Seconds() / defaultRetryInterval.Seconds()))
 	}
+
+	if err := retry.Do(
+		func() error {
+			if ctx.Err() != nil {
+				return retry.Unrecoverable(ctx.Err())
+			}
+
+			headSlot, _, err := getHeadSlotAndSyncDistance(ctx)
+			if err != nil {
+				return err
+			}
+
+			if headSlot >= awaitSlot {
+				return nil
+			}
+
+			return &ClientMissingTargetSlotErr{Current: headSlot, Target: awaitSlot}
+		},
+		retry.Delay(time.Second),
+		retry.Attempts(defaultRetryAttempts),
+		retry.DelayType(retry.FixedDelay),
+		retry.LastErrorOnly(true),
+	); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // getHeadSlotAndSyncDistance is a convenience function that encapsulates some
@@ -72,7 +96,7 @@ func getHeadSlotAndSyncDistance(ctx context.Context) (int, int, error) {
 	client := oapi.GetClient(ctx)
 	result, _, err := client.NodeApi.GetSyncingStatus(ctx)
 	if err != nil {
-		return 0, 0, BadTargetError{Route: "/v1/node/syncing", Err: err}
+		return 0, 0, BadTargetError{Route: "/eth/v1/node/syncing", Err: err}
 	}
 
 	headSlot, err := strconv.ParseInt(result.Data.HeadSlot.(string), 10, 0)

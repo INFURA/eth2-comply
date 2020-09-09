@@ -5,5 +5,8 @@ go_library(
     srcs = ["target.go"],
     importpath = "github.com/INFURA/eth2-comply/pkg/target",
     visibility = ["//visibility:public"],
-    deps = ["//pkg/oapi:go_default_library"],
+    deps = [
+        "//pkg/oapi:go_default_library",
+        "@com_github_avast_retry_go//:go_default_library",
+    ],
 )
