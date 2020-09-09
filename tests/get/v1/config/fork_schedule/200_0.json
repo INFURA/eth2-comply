@@ -1,0 +1,4 @@
+{
+  "method": "GET",
+  "route": "/eth/v1/config/fork_schedule"
+}

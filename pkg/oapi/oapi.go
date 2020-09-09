@@ -393,7 +393,7 @@ func ExecGetDebugBeaconHeads(ctx context.Context) (*ExecutorResult, error) {
 
 }
 
-func ExecGetDebugBecaonStates(ctx context.Context, stateId string) (*ExecutorResult, error) {
+func ExecGetDebugBeaconStates(ctx context.Context, stateId string) (*ExecutorResult, error) {
 	client := GetClient(ctx)
 	states, httpdata, err := client.DebugApi.GetState(ctx, stateId)
 	if err != nil {
@@ -403,6 +403,54 @@ func ExecGetDebugBecaonStates(ctx context.Context, stateId string) (*ExecutorRes
 	result := &ExecutorResult{
 		Response:   states,
 		ResponseDS: eth2spec.GetStateResponse{},
+		StatusCode: &httpdata.StatusCode,
+	}
+
+	return result, nil
+}
+
+func ExecGetConfigForkSchedule(ctx context.Context) (*ExecutorResult, error) {
+	client := GetClient(ctx)
+	schedule, httpdata, err := client.ConfigApi.GetForkSchedule(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ExecutorResult{
+		Response:   schedule,
+		ResponseDS: eth2spec.GetForkScheduleResponse{},
+		StatusCode: &httpdata.StatusCode,
+	}
+
+	return result, nil
+}
+
+func ExecGetConfigSpec(ctx context.Context) (*ExecutorResult, error) {
+	client := GetClient(ctx)
+	spec, httpdata, err := client.ConfigApi.GetSpec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ExecutorResult{
+		Response:   spec,
+		ResponseDS: eth2spec.GetSpecResponse{},
+		StatusCode: &httpdata.StatusCode,
+	}
+
+	return result, nil
+}
+
+func ExecGetConfigDepositContract(ctx context.Context) (*ExecutorResult, error) {
+	client := GetClient(ctx)
+	DepositContract, httpdata, err := client.ConfigApi.GetDepositContract(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := &ExecutorResult{
+		Response:   DepositContract,
+		ResponseDS: eth2spec.GetDepositContractResponse{},
 		StatusCode: &httpdata.StatusCode,
 	}
 

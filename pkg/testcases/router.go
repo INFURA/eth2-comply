@@ -48,6 +48,8 @@ func (c Case) execGetOperation(ctx context.Context, route string) (*oapi.Executo
 		return c.execGetBeaconOperation(ctx, route)
 	case strings.Contains(route, "/debug/"):
 		return c.execGetDebugOperation(ctx, route)
+	case strings.Contains(route, "/config/"):
+		return c.execGetConfigOperation(ctx, route)
 	}
 
 	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}
@@ -141,10 +143,23 @@ func (c Case) execGetDebugOperation(ctx context.Context, route string) (*oapi.Ex
 		switch {
 		case strings.Contains(route, "/states/"):
 			stateId := uriTokens[5]
-			return oapi.ExecGetDebugBecaonStates(ctx, stateId)
+			return oapi.ExecGetDebugBeaconStates(ctx, stateId)
 		}
 	case strings.Contains(route, "/heads"):
 		return oapi.ExecGetDebugBeaconHeads(ctx)
+	}
+
+	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}
+}
+
+func (c Case) execGetConfigOperation(ctx context.Context, route string) (*oapi.ExecutorResult, error) {
+	switch {
+	case strings.Contains(route, "/fork_schedule"):
+		return oapi.ExecGetConfigForkSchedule(ctx)
+	case strings.Contains(route, "/spec"):
+		return oapi.ExecGetConfigSpec(ctx)
+	case strings.Contains(route, "/deposit_contract"):
+		return oapi.ExecGetConfigDepositContract(ctx)
 	}
 
 	return nil, UnimplementedOperationError{method: c.Config.Method, route: route}
