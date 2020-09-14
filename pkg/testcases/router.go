@@ -64,12 +64,12 @@ func (c Case) execGetBeaconOperation(ctx context.Context, route string) (*oapi.E
 	case strings.Contains(route, "/genesis"):
 		return oapi.ExecGetBeaconGenesis(ctx)
 	case strings.Contains(route, "/headers/"):
-		blockId := uriTokens[4]
+		blockId := uriTokens[5]
 		return oapi.ExecGetBeaconHeader(ctx, blockId)
 	case strings.Contains(route, "/headers"):
 		return oapi.ExecGetBeaconHeaders(ctx, c.Config.QueryParams)
 	case strings.Contains(route, "/blocks/"):
-		blockId := uriTokens[4]
+		blockId := uriTokens[5]
 		switch {
 		case strings.Contains(route, "/root"):
 			return oapi.ExecGetBeaconBlockRoot(ctx, blockId)
@@ -110,11 +110,11 @@ func (c Case) execGetNodeOperation(ctx context.Context, route string) (*oapi.Exe
 
 func (c Case) execGetBeaconStatesOperation(ctx context.Context, route string) (*oapi.ExecutorResult, error) {
 	uriTokens := strings.Split(route, "/")
-	stateId := uriTokens[4]
+	stateId := uriTokens[5]
 
 	switch {
 	case strings.Contains(route, "/committees/"):
-		epoch := uriTokens[6]
+		epoch := uriTokens[7]
 		opts := &oapi.ExecGetBeaconStatesCommitteesOpts{
 			StateId:     stateId,
 			Epoch:       epoch,
@@ -128,7 +128,7 @@ func (c Case) execGetBeaconStatesOperation(ctx context.Context, route string) (*
 	case strings.Contains(route, "/root"):
 		return oapi.ExecGetBeaconStatesRoot(ctx, stateId)
 	case strings.Contains(route, "/validators/"):
-		validatorId := uriTokens[6]
+		validatorId := uriTokens[7]
 		return oapi.ExecGetBeaconStatesValidator(ctx, stateId, validatorId)
 	case strings.Contains(route, "/validators"):
 		return oapi.ExecGetBeaconStatesValidators(ctx, stateId, c.Config.QueryParams)
@@ -142,7 +142,7 @@ func (c Case) execGetDebugOperation(ctx context.Context, route string) (*oapi.Ex
 
 	switch {
 	case strings.Contains(route, "/states/"):
-		stateId := uriTokens[5]
+		stateId := uriTokens[6]
 		return oapi.ExecGetDebugBeaconStates(ctx, stateId)
 	case strings.Contains(route, "/heads"):
 		return oapi.ExecGetDebugBeaconHeads(ctx)
@@ -172,7 +172,7 @@ func (c Case) execGetValidatorOperation(ctx context.Context, route string) (*oap
 		switch {
 		case strings.Contains(route, "/attester/"):
 			opts := oapi.ExecGetValidatorDutiesAttesterOpts{
-				Epoch:       uriTokens[5],
+				Epoch:       uriTokens[6],
 				QueryParams: c.Config.QueryParams,
 			}
 			return oapi.ExecGetValidatorDutiesAttester(ctx, opts)
