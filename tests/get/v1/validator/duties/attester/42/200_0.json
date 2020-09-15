@@ -1,5 +1,6 @@
 {
   "method": "GET",
-  "route": "/eth/v1/validator/duties/attester/42",
-  "awaitSlot": 42
+  "route": "/eth/v1/validator/duties/attester/3",
+  "awaitSlot": 42,
+  "queryParams": {"index": "1"}
 }
