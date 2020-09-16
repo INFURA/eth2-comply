@@ -177,11 +177,11 @@ func (c Case) execGetValidatorOperation(ctx context.Context, route string) (*oap
 			}
 			return oapi.ExecGetValidatorDutiesAttester(ctx, opts)
 		case strings.Contains(route, "/proposer/"):
-			return oapi.ExecGetValidatorDutiesProposer(ctx, uriTokens[5])
+			return oapi.ExecGetValidatorDutiesProposer(ctx, uriTokens[6])
 		}
 	case strings.Contains(route, "/blocks/"):
 		opts := oapi.ExecGetValidatorBlocksOpts{
-			Slot:        uriTokens[4],
+			Slot:        uriTokens[5],
 			QueryParams: c.Config.QueryParams,
 		}
 		return oapi.ExecGetValidatorBlocks(ctx, opts)
