@@ -1,5 +1,5 @@
 {
   "method": "GET",
-  "route": "/eth/v1/validator/duties/proposer/42",
+  "route": "/eth/v1/validator/duties/proposer/3",
   "awaitSlot": 42
 }
