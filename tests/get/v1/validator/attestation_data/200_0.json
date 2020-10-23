@@ -1,4 +1,5 @@
 {
   "method": "GET",
-  "route": "/eth/v1/validator/attestation_data"
+  "route": "/eth/v1/validator/attestation_data",
+  "queryParams": { "slot": "42", "committee_index": "1"}
 }
