@@ -17,7 +17,7 @@ jobs:
           ref: ${{ github.ref }}
       - name: get version
         id: get_version
-        run: echo ::set-output name=version::${GITHUB_REF#refs/tags/}
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
       - name: build (all platforms)
         uses: ./.github/actions/build
       - name: create release
